@@ -1,0 +1,19 @@
+2.0.4             December 2, 2014
+  
+    - System params can be overridden by a user
+    - Set params name according to the recuarement document
+    - Removed 'device_model', 'device_brand', because they cannot be detected correctly
+    - Converts escaped symbols
+    - Trims spaces in a parameter values
+    - Send refferer even if it hasn't UTM parameters
+    
+2.0.3             October 10, 2014
+ 
+    - Detects, Collects and Send UTM parameters from refferer if any were specified
+    - Built in events by default
+
+2.0.0             May 13, 2014
+
+  - Async mode
+ 
+   
