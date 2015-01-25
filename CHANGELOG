@@ -1,3 +1,10 @@
+2.1.7             January 25, 2015
+    - Create user ID and store on cookies
+    - Add trackEventLater with bulk function
+    - Add callback function
+    - Send GET with base64
+    - Config: GET/POST/Img
+    
 2.0.4             December 2, 2014
   
     - System params can be overridden by a user
