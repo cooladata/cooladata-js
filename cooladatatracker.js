@@ -52,7 +52,7 @@
  */
     var   _                 = {}
         , DEFAULT_CONFIG    = {
-            "api_host":                   HTTP_PROTOCOL + '130.211.114.149:9090'
+            "api_host":                   HTTP_PROTOCOL + 'api.cooladata.com'
             ,"loaded":                     function() {}
             , "img":                        false
             , "http_post":                  false
