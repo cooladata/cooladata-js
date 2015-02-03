@@ -53,15 +53,16 @@
                        </compilation>
                        -->
                         <compilation>
-                            <compilationLevel>ADVANCED_OPTIMIZATIONS</compilationLevel>
+                            <compilationLevel>SIMPLE_OPTIMIZATIONS</compilationLevel>
                             <compilerOptions>
                                 <prettyPrint>false</prettyPrint>
+                                <!--<runtimeTypeCheck>true</runtimeTypeCheck>-->
                             </compilerOptions>
                             <externFiles></externFiles>
                             <sourceFiles>
                                 <param>${basedir}/src/main/web/js/cooladatatracker.js</param>
                             </sourceFiles>
-                            <outputFile>${project.build.outputDirectory}/static/js/cooladatatracker.min.js</outputFile>
+                            <outputFile>${project.build.outputDirectory}/static/js/cooladata-2.1.8.min.js</outputFile>
                         </compilation>
                     </compilations>
                 </configuration>

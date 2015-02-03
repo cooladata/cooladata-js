@@ -955,7 +955,7 @@
         }
 
         var json_data = _.JSONEncode(data);
-        var url = this.get_config('api_host') + "/egw/5/" + this.get_config('token') + "/track";
+        var url = this.get_config('api_host') + "/v1/" + this.get_config('token') + "/track";
 
         this._send_request(
             url,
@@ -970,7 +970,6 @@
      * track_pageload configuration variable is false.
      *
      * @param {String} [page] The url of the page to record. If you don't include this, it defaults to the current url.
-     * @api private
      */
     CooladataLib.prototype.track_pageload = function(page) {
         if (typeof(page) === "undefined") { page = document.location.href; }
