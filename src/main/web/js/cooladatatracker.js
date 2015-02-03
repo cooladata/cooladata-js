@@ -1,21 +1,31 @@
 /*
- * Cooladata JS Library v2.1.7
- * Copyright 2014, Cooladata, Inc. All Rights Reserved
- 
- * Includes portions of Underscore.js
- * http://documentcloud.github.com/underscore/
- * (c) 2011 Jeremy Ashkenas, DocumentCloud Inc.
- * Released under the MIT License.
-
-*/
+ * Licensed to CRATE Technology GmbH ("Crate") under one or more contributor
+ * license agreements.  See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.  Crate licenses
+ * this file to you under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.  You may
+ * obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * However, if you have executed another commercial license agreement
+ * with Crate these terms will supersede the license and you may use the
+ * software solely pursuant to the terms of the relevant commercial agreement.
+ */
 (function (cooladata) {
 
     var eventsArray =[];
 
-/*
- * Saved references to long variable names, so that closure compiler can
- * minimize file size.
- */
+    /*
+     * Saved references to long variable names, so that closure compiler can
+     * minimize file size.
+     */
     var   ArrayProto        = Array.prototype
         , FuncProto         = Function.prototype
         , ObjProto          = Object.prototype
@@ -28,28 +38,28 @@
         , userAgent         = navigator.userAgent;
 
 
-/** @const */   var   PRIMARY_INSTANCE_NAME     = "cooladata";
+    /** @const */   var   PRIMARY_INSTANCE_NAME     = "cooladata";
 
-/*
- * Dynamic... constants? Is that an oxymoron?
- */
+    /*
+     * Dynamic... constants? Is that an oxymoron?
+     */
     var HTTP_PROTOCOL = (("https:" == document.location.protocol) ? "https://" : "http://"),
 
         LIB_VERSION = '2.1.7',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
-        // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
-        // https://developer.mozilla.org/en-US/docs/DOM/XMLHttpRequest#withCredentials
+    // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
+    // https://developer.mozilla.org/en-US/docs/DOM/XMLHttpRequest#withCredentials
         USE_XHR = (window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest()),
 
-        // IE<10 does not support cross-origin XHR's but script tags
-        // with defer won't block window.onload; ENQUEUE_REQUESTS
-        // should only be true for Opera<12
+    // IE<10 does not support cross-origin XHR's but script tags
+    // with defer won't block window.onload; ENQUEUE_REQUESTS
+    // should only be true for Opera<12
         ENQUEUE_REQUESTS = !USE_XHR && (userAgent.indexOf('MSIE') == -1) && (userAgent.indexOf('Mozilla') == -1);
 
-/*
- * Closure-level globals
- */
+    /*
+     * Closure-level globals
+     */
     var   _                 = {}
         , DEFAULT_CONFIG    = {
             "api_host":                   HTTP_PROTOCOL + 'api.cooladata.com'
@@ -243,10 +253,10 @@
                             // Join all of the elements together, separated with commas, and wrap them in
                             // brackets.
                             v = partial.length === 0 ? '[]' :
-                            gap ? '[\n' + gap +
-                            partial.join(',\n' + gap) + '\n' +
-                            mind + ']' :
-                            '[' + partial.join(',') + ']';
+                                gap ? '[\n' + gap +
+                                partial.join(',\n' + gap) + '\n' +
+                                mind + ']' :
+                                '[' + partial.join(',') + ']';
                             gap = mind;
                             return v;
                         }
@@ -264,8 +274,8 @@
                         // Join all of the member texts together, separated with commas,
                         // and wrap them in braces.
                         v = partial.length === 0 ? '{}' :
-                        gap ? '{' + partial.join(',') + '' +
-                        mind + '}' : '{' + partial.join(',') + '}';
+                            gap ? '{' + partial.join(',') + '' +
+                            mind + '}' : '{' + partial.join(',') + '}';
                         gap = mind;
                         return v;
                 }
@@ -290,8 +300,8 @@
     _.base64Encode = function(data) {
 
         var Base64={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
-        ,encode:function(e){var t="";var n,r,i,s,o,u,a;var f=0;e=Base64._utf8_encode(e);while(f<e.length){n=e.charCodeAt(f++);r=e.charCodeAt(f++);i=e.charCodeAt(f++);s=n>>2;o=(n&3)<<4|r>>4;u=(r&15)<<2|i>>6;a=i&63;if(isNaN(r)){u=a=64}else if(isNaN(i)){a=64}t=t+this._keyStr.charAt(s)+this._keyStr.charAt(o)+this._keyStr.charAt(u)+this._keyStr.charAt(a)}return t}
-        ,_utf8_encode:function(e){e=e.replace(/\r\n/g,"\n");var t="";for(var n=0;n<e.length;n++){var r=e.charCodeAt(n);if(r<128){t+=String.fromCharCode(r)}else if(r>127&&r<2048){t+=String.fromCharCode(r>>6|192);t+=String.fromCharCode(r&63|128)}else{t+=String.fromCharCode(r>>12|224);t+=String.fromCharCode(r>>6&63|128);t+=String.fromCharCode(r&63|128)}}return t}}
+            ,encode:function(e){var t="";var n,r,i,s,o,u,a;var f=0;e=Base64._utf8_encode(e);while(f<e.length){n=e.charCodeAt(f++);r=e.charCodeAt(f++);i=e.charCodeAt(f++);s=n>>2;o=(n&3)<<4|r>>4;u=(r&15)<<2|i>>6;a=i&63;if(isNaN(r)){u=a=64}else if(isNaN(i)){a=64}t=t+this._keyStr.charAt(s)+this._keyStr.charAt(o)+this._keyStr.charAt(u)+this._keyStr.charAt(a)}return t}
+            ,_utf8_encode:function(e){e=e.replace(/\r\n/g,"\n");var t="";for(var n=0;n<e.length;n++){var r=e.charCodeAt(n);if(r<128){t+=String.fromCharCode(r)}else if(r>127&&r<2048){t+=String.fromCharCode(r>>6|192);t+=String.fromCharCode(r&63|128)}else{t+=String.fromCharCode(r>>12|224);t+=String.fromCharCode(r>>6&63|128);t+=String.fromCharCode(r&63|128)}}return t}}
 
         return Base64.encode(data);
     };
@@ -326,7 +336,7 @@
         // 1*new Date() is a cross browser version of Date.now()
         var T = function() {
             var d = 1*new Date()
-            , i = 0;
+                , i = 0;
 
             // this while loop figures how many browser ticks go by
             // before 1*new Date() returns a new number, ie the amount
@@ -399,11 +409,11 @@
         // https://gist.github.com/1930440
 
         /**
-        * @param {Object} element
-        * @param {string} type
-        * @param {function(...[*])} handler
-        * @param {boolean=} oldSchool
-        */
+         * @param {Object} element
+         * @param {string} type
+         * @param {function(...[*])} handler
+         * @param {boolean=} oldSchool
+         */
         var register_event = function(element, type, handler, oldSchool) {
             if (!element) {
                 windowConsole.log("No valid element provided to register_event");
@@ -609,7 +619,7 @@
         this['config'] = {};
 
         this.set_config(_.extend({}, DEFAULT_CONFIG, {
-              "token": userObject.app_key
+            "token": userObject.app_key
             , "img": userObject.img_src_get_request
             , "session_id": userObject.session_id
             , "http_post": userObject.http_post
@@ -729,7 +739,7 @@
 
         // set defaults
         properties = properties || {};
-        
+
         // note: extend writes to the first object, so lets make sure we
         // don't write to the cookie properties object and info
         // properties object by passing in a new object
@@ -756,8 +766,8 @@
     };
 
     CooladataLib.prototype.flush = function() {
-        var url = this.get_config('api_host') + "/egw/5/" + this.get_config('token') + "/track";
-        
+        var url = this.get_config('api_host') + "/v1/" + this.get_config('token') + "/track";
+
         var data = {
             events: eventsArray
         };
@@ -786,13 +796,13 @@
             }
             return false;
         }
-        
+
         if (isOldIE() || this.get_config('img')) {
             data = {'data': _.base64Encode(data)};
             url += '?' + _.HTTPBuildQuery(data);
             var img = document.createElement("img");
-                img.src = url;
-                img.setAttribute('onerror','this.style.width="0";this.style.height="0"');
+            img.src = url;
+            img.setAttribute('onerror','this.style.width="0";this.style.height="0"');
             document.body.appendChild(img);
         } else if (USE_XHR) {
             var params = null;
@@ -828,13 +838,13 @@
                 }
             };
             req.send(params);
-            
+
         } else {
             var script = document.createElement("script");
-                script.type = "text/javascript";
-                script.async = true;
-                script.defer = true;
-                script.src = url;
+            script.type = "text/javascript";
+            script.async = true;
+            script.defer = true;
+            script.src = url;
             var s = document.getElementsByTagName("script")[0];
             s.parentNode.insertBefore(script, s);
         }
@@ -951,7 +961,7 @@
             url,
             json_data,
             callback
-        );  
+        );
     };
 
     /**
@@ -999,9 +1009,9 @@
      *
      * @param {String} property_name The name of the super property you want to retrieve
      */
-    // CooladataLib.prototype.get_property = function(property_name) {
-    //     return this['cookie']['props'][property_name];
-    // };
+        // CooladataLib.prototype.get_property = function(property_name) {
+        //     return this['cookie']['props'][property_name];
+        // };
 
     CooladataLib.prototype.toString = function() {
         var name = this.get_config("name");
