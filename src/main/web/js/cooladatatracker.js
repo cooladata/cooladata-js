@@ -45,7 +45,7 @@
      */
     var HTTP_PROTOCOL = (("https:" == document.location.protocol) ? "https://" : "http://"),
 
-        LIB_VERSION = '2.1.7',
+        LIB_VERSION = '2.1.8',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
     // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
