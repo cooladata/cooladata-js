@@ -45,7 +45,7 @@
      */
     var HTTP_PROTOCOL = (("https:" == document.location.protocol) ? "https://" : "http://"),
 
-        LIB_VERSION = '2.1.8',
+        LIB_VERSION = '2.1.9',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
     // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
@@ -690,9 +690,17 @@
         var days = this.get_config('cookie_expiration');
         var date = new Date();
         date.setTime(date.getTime()+(days*24*60*60*1000));
-        var expires = "; expires=" + date.toGMTString();
+        var expires = date
+        var path = "path=/"
 
-        document.cookie = cname + "=" + _.UUID() + expires;
+
+        var full_domain= window.location.host
+        var parts = full_domain.split('.')
+        var sub = parts[0]
+        var domain = parts[1]
+        var type = parts[2]
+        document.cookie = cname + "=" + _.UUID() + ';expires=' + expires + ';domain=.' + domain + '.' + type + ';' + path;
+
     };
 
     CooladataLib.prototype._loaded = function() {
