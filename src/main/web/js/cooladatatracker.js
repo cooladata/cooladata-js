@@ -805,7 +805,14 @@
             return false;
         }
 
-        if (isOldIE() || this.get_config('img')) {
+        // check data size. Bigger than 2k, use post
+        var doPost = false;
+        var dataSize = data.length;
+        if (dataSize>2048){
+            doPost = true;
+        }
+
+        if ( !doPost && (isOldIE() || this.get_config('img')) ) {
             data = {'data': _.base64Encode(data)};
             url += '?' + _.HTTPBuildQuery(data);
             var img = document.createElement("img");
@@ -814,7 +821,7 @@
             document.body.appendChild(img);
         } else if (USE_XHR) {
             var params = null;
-            if(this.get_config('http_post')) {
+            if(this.get_config('http_post') || doPost) {
                 params = 'data=' + data;
             }
             else {
@@ -823,7 +830,7 @@
             }
 
             var req = new XMLHttpRequest();
-            if(this.get_config('http_post')) {
+            if(this.get_config('http_post') || doPost) {
                 req.open("POST", url, true);
                 req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
             }
