@@ -45,7 +45,7 @@
      */
     var HTTP_PROTOCOL = (("https:" == document.location.protocol) ? "https://" : "http://"),
 
-        LIB_VERSION = '2.1.9',
+        LIB_VERSION = '2.1.10',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
     // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
@@ -690,16 +690,45 @@
         var days = this.get_config('cookie_expiration');
         var date = new Date();
         date.setTime(date.getTime()+(days*24*60*60*1000));
-        var expires = date
+        var expires = "; expires=" + date.toGMTString();
         var path = "path=/"
 
+        var TLD = ["com","org","net","int","edu","gov","mil","biz"];
 
-        var full_domain= window.location.host
-        var parts = full_domain.split('.')
-        var sub = parts[0]
-        var domain = parts[1]
-        var type = parts[2]
-        document.cookie = cname + "=" + _.UUID() + ';expires=' + expires + ';domain=.' + domain + '.' + type + ';' + path;
+        var full_domain= window.location.host;
+        var parts = full_domain.split('.');
+        var domain = "";
+
+
+        if (parts[0] == "www" || parts.length == 4) {
+            // If the host starts with www or has 4 parts, then remove the first part (www or subdomain) and return the rest
+            parts.shift();
+            domain = parts.join(".");
+        }
+        else {
+            switch (parts.length) {
+                case 2:
+                    // if the host has only 2 parts, return it
+                    domain = parts.join(".");
+                    break;
+                case 3:
+                    // if the host has 3 parts, check if the last part is a known 3-char TLD; if it is, the first part is a subdomain; otherwise, we have a 2 part TLD
+                    var x = TLD.length;
+                    while (x--) {
+                        if (TLD[x] === parts[2]) {
+                            parts.shift();
+                            domain = parts.join(".");
+                            break;
+                        }
+                    }
+                    // If we found nothing so far, there is no subdomain and this is a 2 part TLD; return as is
+                    if (domain == "")
+                        domain = parts.join(".");
+                    break;
+            }
+        }
+
+        document.cookie = cname + "=" + _.UUID() + expires + ';domain=.' + domain + ';' + path;
 
     };
 
@@ -808,7 +837,7 @@
         // check data size. Bigger than 2k, use post
         var doPost = false;
         var dataSize = data.length;
-        if (dataSize>2048){
+        if (dataSize>1400){
             doPost = true;
         }
 
@@ -822,7 +851,7 @@
         } else if (USE_XHR) {
             var params = null;
             if(this.get_config('http_post') || doPost) {
-                params = 'data=' + data;
+                params = 'data=' + encodeURIComponent(data);
             }
             else {
                 data = {'data': _.base64Encode(data)};
