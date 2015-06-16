@@ -814,7 +814,7 @@
         eventsArray = [];
     };
 
-    CooladataLib.prototype._send_request = function(url, data, callback) {
+    CooladataLib.prototype._send_request = function(data, callback) {
         if (ENQUEUE_REQUESTS) {
             this.__request_queue.push(arguments);
             return;
@@ -841,7 +841,11 @@
             doPost = true;
         }
 
+
+        var url= this.get_config('api_host') + "/v1/" + this.get_config('token') + "/track";
+
         if ( !doPost && (isOldIE() || this.get_config('img')) ) {
+            url = this.get_config('api_host') + "/egw/4/" + this.get_config('token') + "/__cool.gif";
             data = {'data': _.base64Encode(data)};
             url += '?' + _.HTTPBuildQuery(data);
             var img = document.createElement("img");
@@ -999,10 +1003,9 @@
         }
 
         var json_data = _.JSONEncode(data);
-        var url = this.get_config('api_host') + "/v1/" + this.get_config('token') + "/track";
+
 
         this._send_request(
-            url,
             json_data,
             callback
         );
