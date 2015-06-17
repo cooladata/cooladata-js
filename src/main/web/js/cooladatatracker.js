@@ -45,7 +45,7 @@
      */
     var HTTP_PROTOCOL = (("https:" == document.location.protocol) ? "https://" : "http://"),
 
-        LIB_VERSION = '2.1.10',
+        LIB_VERSION = '2.1.11',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
     // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
@@ -115,8 +115,8 @@
         };
 
         _.isArray = nativeIsArray || function(obj) {
-            return toString.call(obj) === '[object Array]';
-        };
+                return toString.call(obj) === '[object Array]';
+            };
 
         // from a comment on http://dbj.org/dbj/?p=286
         // fails on only one very rare and deliberate custom object:
@@ -846,8 +846,8 @@
 
         if ( !doPost && (isOldIE() || this.get_config('img')) ) {
             url = this.get_config('api_host') + "/egw/4/" + this.get_config('token') + "/__cool.gif";
-            data = {'data': _.base64Encode(data)};
-            url += '?' + _.HTTPBuildQuery(data);
+            data = _.base64Encode(data);
+            url += '?data=' + data;
             var img = document.createElement("img");
             img.src = url;
             img.setAttribute('onerror','this.style.width="0";this.style.height="0"');
