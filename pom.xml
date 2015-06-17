@@ -62,7 +62,7 @@
                             <sourceFiles>
                                 <param>${basedir}/src/main/web/js/cooladatatracker.js</param>
                             </sourceFiles>
-                            <outputFile>${project.build.outputDirectory}/static/js/cooladata-2.1.10.min.js</outputFile>
+                            <outputFile>${project.build.outputDirectory}/static/js/cooladata-2.1.11.min.js</outputFile>
                         </compilation>
                     </compilations>
                 </configuration>
