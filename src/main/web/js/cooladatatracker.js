@@ -810,7 +810,7 @@
         };
 
         var json_data = _.JSONEncode(data);
-        this._send_request(url, json_data);
+        this._send_request(json_data);
         eventsArray = [];
     };
 
