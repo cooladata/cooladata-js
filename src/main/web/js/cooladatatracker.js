@@ -45,7 +45,7 @@
      */
     var HTTP_PROTOCOL = (("https:" == document.location.protocol) ? "https://" : "http://"),
 
-        LIB_VERSION = '2.1.11',
+        LIB_VERSION = '2.1.12',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
     // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
@@ -845,7 +845,7 @@
         var url= this.get_config('api_host') + "/v1/" + this.get_config('token') + "/track";
 
         if ( !doPost && (isOldIE() || this.get_config('img')) ) {
-            url = this.get_config('api_host') + "/egw/4/" + this.get_config('token') + "/__cool.gif";
+            url = this.get_config('api_host') + "/egw/5/" + this.get_config('token') + "/track/__cool.gif";
             data = _.base64Encode(data);
             url += '?data=' + data;
             var img = document.createElement("img");
