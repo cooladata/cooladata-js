@@ -846,6 +846,7 @@
 
         if ( !doPost && (isOldIE() || this.get_config('img')) ) {
             url = this.get_config('api_host') + "/egw/5/" + this.get_config('token') + "/track/__cool.gif";
+
             data = _.base64Encode(data);
             url += '?data=' + data;
             var img = document.createElement("img");
