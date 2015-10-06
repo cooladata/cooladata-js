@@ -814,6 +814,10 @@
         eventsArray = [];
     };
 
+    CooladataLib.prototype._onError = function(data, callback) {
+        //windowConsole.log('onError');
+    }
+
     CooladataLib.prototype._send_request = function(data, callback) {
         if (ENQUEUE_REQUESTS) {
             this.__request_queue.push(arguments);
@@ -845,14 +849,17 @@
         var url= this.get_config('api_host') + "/v1/" + this.get_config('token') + "/track";
 
         if ( !doPost && (isOldIE() || this.get_config('img')) ) {
+            var that = this;
             url = this.get_config('api_host') + "/egw/5/" + this.get_config('token') + "/track/__cool.gif";
-
             data = _.base64Encode(data);
             url += '?data=' + data;
             var img = document.createElement("img");
+            img.onerror = function() {
+                that._onError(data, callback);
+            }
+            img.width = 1;
+            img.height = 1;
             img.src = url;
-            img.setAttribute('onerror','this.style.width="0";this.style.height="0"');
-            document.body.appendChild(img);
         } else if (USE_XHR) {
             var params = null;
             if(this.get_config('http_post') || doPost) {
