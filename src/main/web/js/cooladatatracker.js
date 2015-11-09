@@ -671,6 +671,10 @@
 
         this.__dom_loaded_queue = [];
         this.__request_queue = [];
+
+        if(userObject.custom_event_handler){
+            this.__customEventHandler = userObject.custom_event_handler;
+        }
     };
 
     // Private methods
@@ -845,6 +849,16 @@
             doPost = true;
         }
 
+        if(this.__customEventHandler && this.__customEventHandler.handleRequest) {
+          var endpointType = null;
+          if ( !doPost && (isOldIE() || this.get_config('img')) ) {
+            endpointType = 'image';
+          } else if(USE_XHR) {
+            endpointType = (this.get_config('http_post') || doPost) ? 'post' : 'get';
+          }
+          this.__customEventHandler.handleRequest(this, data, endpointType);
+          return;
+        }
 
         var url= this.get_config('api_host') + "/v1/" + this.get_config('token') + "/track";
 
