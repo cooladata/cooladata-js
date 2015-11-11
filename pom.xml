@@ -21,60 +21,55 @@
         </pluginRepository>
     </pluginRepositories>
 
-
     <build>
         <plugins>
+
+
             <plugin>
-                <groupId>com.sandwormz</groupId>
-                <artifactId>maven.closure.plugin</artifactId>
-                <version>0.0.2-SNAPSHOT</version>
+                <groupId>com.samaxes.maven</groupId>
+                <artifactId>minify-maven-plugin</artifactId>
+                <version>1.7.4</version>
                 <executions>
                     <execution>
+                        <id>default-minify</id>
+                        <configuration>
+                            <cssSourceFiles>
+                            </cssSourceFiles>
+                            <jsSourceFiles>
+                                <jsSourceFile>cooladatatracker.js</jsSourceFile>
+                            </jsSourceFiles>
+                            <jsEngine>CLOSURE</jsEngine>
+                            <jsFinalFile>cooladata-2.1.12.js</jsFinalFile>
+                            <closureCreateSourceMap>true</closureCreateSourceMap>
+                            <!--closureCompilationLevel>ADVANCED_OPTIMIZATIONS</closureCompilationLevel-->
+                            <!--closureExterns>
+                                <closureExtern>extern/external-lib.js</closureExtern>
+                            </closureExterns-->
+                        </configuration>
                         <goals>
-                            <goal>compile</goal>
+                            <goal>minify</goal>
                         </goals>
                     </execution>
+
                 </executions>
-                <configuration>
-                    <compilations>
-                        <!--
-                       <compilation>
-                           <compilationLevel>WHITESPACE_ONLY</compilationLevel>
-                           <compilerOptions>
-                               <prettyPrint>true</prettyPrint>
-                               <lineBreak>true</lineBreak>
-                               <runtimeTypeCheck>true</runtimeTypeCheck>
-                           </compilerOptions>
-                           <externFiles></externFiles>
-                           <sourceFiles>
-                               <param>${basedir}/src/main/web/js/cooladatatracker.js</param>
-                           </sourceFiles>
-                           <outputFile>${basedir}/src/main/web/cooladatatracker-d.min.js</outputFile>
-                       </compilation>
-                       -->
-                        <compilation>
-                            <compilationLevel>SIMPLE_OPTIMIZATIONS</compilationLevel>
-                            <compilerOptions>
-                                <prettyPrint>false</prettyPrint>
-                                <!--<runtimeTypeCheck>true</runtimeTypeCheck>-->
-                            </compilerOptions>
-                            <externFiles></externFiles>
-                            <sourceFiles>
-                                <param>${basedir}/src/main/web/js/cooladatatracker.js</param>
-                            </sourceFiles>
-                            <outputFile>${project.build.outputDirectory}/static/js/cooladata-2.1.12.min.js</outputFile>
-                        </compilation>
-                    </compilations>
-                </configuration>
             </plugin>
+
         </plugins>
     </build>
 
     <dependencies>
+
+        <dependency>
+            <groupId>com.samaxes.maven</groupId>
+            <artifactId>minify-maven-plugin</artifactId>
+            <version>1.7.4</version>
+        </dependency>
+
+
         <dependency>
             <groupId>com.google.javascript</groupId>
             <artifactId>closure-compiler</artifactId>
-            <version>v20141215</version>
+            <version>v20140730</version>
         </dependency>
 
     </dependencies>
