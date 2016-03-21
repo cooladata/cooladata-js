@@ -43,9 +43,9 @@
     /*
      * Dynamic... constants? Is that an oxymoron?
      */
-    var HTTP_PROTOCOL = (("https:" == document.location.protocol) ? "https://" : "http://"),
+    var HTTP_PROTOCOL = (("http:" == document.location.protocol) ? "http://" : "https://"),
 
-        LIB_VERSION = '2.1.13',
+        LIB_VERSION = '2.1.14',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
     // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
