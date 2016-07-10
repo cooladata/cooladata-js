@@ -633,6 +633,12 @@
             });
         }
 
+        if(userObject.cookie_expiration) {
+            this.set_config({
+                "cookie_expiration": userObject.cookie_expiration
+            });
+        }
+
         if(userObject.user_id) {
             this.set_config({
                 "user_id": userObject.user_id
