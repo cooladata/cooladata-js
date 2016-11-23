@@ -45,7 +45,7 @@
      */
     var HTTP_PROTOCOL = (("http:" == document.location.protocol) ? "http://" : "https://"),
 
-        LIB_VERSION = '2.1.15',
+        LIB_VERSION = '2.1.16',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
     // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
@@ -69,7 +69,9 @@
             , "track_pageload":             false
             , "cookie_expiration":          365
             , "disable_cookie":             false
+            , "izzyClick":                  false
             , "cookie_name":                "cd_user_id"
+            , "izzyScriptUrl": 			    "ezsdk.cooladata.com/[APPKEY]/Izzycdext.js"
         }
         , DOM_LOADED        = false;
 
@@ -519,7 +521,13 @@
             });
         }
     };
-
+    //Load izzy click
+    function loadIzzyScript(scriptSrc){
+            var fileObj = document.createElement('script');
+            fileObj.setAttribute("type","text/javascript");
+            fileObj.setAttribute("src", scriptSrc);
+            document.getElementsByTagName("head")[0].appendChild(fileObj);
+    }
     // Console override
     var console = {
         /** @type {function(...[*])} */
@@ -631,6 +639,11 @@
             this.set_config({
                 "api_host": HTTP_PROTOCOL + userObject.api_host
             });
+        }
+
+        if(userObject.izzyClick){
+            var scriptSrc = HTTP_PROTOCOL + DEFAULT_CONFIG.izzyScriptUrl.replace("[APPKEY]",userObject.app_key);
+            loadIzzyScript(scriptSrc);
         }
 
         if(userObject.cookie_expiration) {
