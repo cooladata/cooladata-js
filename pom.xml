@@ -39,7 +39,7 @@
                                 <jsSourceFile>cooladatatracker.js</jsSourceFile>
                             </jsSourceFiles>
                             <jsEngine>CLOSURE</jsEngine>
-                            <jsFinalFile>cooladata-2.1.15.js</jsFinalFile>
+                            <jsFinalFile>cooladata-2.1.17.js</jsFinalFile>
                             <closureCreateSourceMap>true</closureCreateSourceMap>
                             <!--closureCompilationLevel>ADVANCED_OPTIMIZATIONS</closureCompilationLevel-->
                             <!--closureExterns>
