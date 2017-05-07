@@ -518,7 +518,8 @@
                 'event_timestamp_epoch': 1 * (new Date()),
                 'page_url': window.location.protocol + '//' + window.location.host + window.location.pathname,
                 'page_title': document.title,
-                'page_url_params': window.location.search ? window.location.search.slice(1) : ''
+                'page_url_params': window.location.search ? window.location.search.slice(1) : '',
+                'page_url_hash': window.location.hash ? window.location.hash : '',
             });
         }
     };
