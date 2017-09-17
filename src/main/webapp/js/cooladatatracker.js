@@ -626,6 +626,7 @@
     //
     CooladataLib.prototype._init = function(userObject) {
         this['__loaded'] = true;
+        this['__SV'] = true;
         this['config'] = {};
 
         this.set_config(_.extend({}, DEFAULT_CONFIG, {
