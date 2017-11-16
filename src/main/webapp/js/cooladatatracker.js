@@ -506,7 +506,8 @@
                 'session_dua': navigator.userAgent,
                 'session_platform': navigator.platform,
                 'referring_url': document.referrer,
-                'referring_domain': _.info.referringDomain(document.referrer)
+                'referring_domain': _.info.referringDomain(document.referrer),
+                'page_title': document.title     
             }), {
                 'tracker_type': 'javascript',
                 'tracker_version': LIB_VERSION
@@ -517,7 +518,7 @@
             return _.strip_empty_properties({
                 'event_timestamp_epoch': 1 * (new Date()),
                 'page_url': document.location.href,//window.location.protocol + '//' + window.location.host + window.location.pathname,
-                'page_title': document.title//,
+            //    'page_title': document.title//,
             //    'page_url_params': window.location.search ? window.location.search.slice(1) : '',
             //    'page_url_hash': window.location.hash ? window.location.hash : '',
             });
