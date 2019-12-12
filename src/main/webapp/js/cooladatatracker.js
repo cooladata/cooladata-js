@@ -20,8 +20,6 @@
  */
 (function (cooladata) {
 
-    var eventsArray =[];
-
     /*
      * Saved references to long variable names, so that closure compiler can
      * minimize file size.
@@ -45,7 +43,7 @@
      */
     var HTTP_PROTOCOL = (("http:" == document.location.protocol) ? "http://" : "https://"),
 
-        LIB_VERSION = '2.1.19',
+        LIB_VERSION = '2.1.20',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
     // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
@@ -62,16 +60,15 @@
      */
     var   _                 = {}
         , DEFAULT_CONFIG    = {
-            "api_host":                   HTTP_PROTOCOL + 'api.cooladata.com'
-            ,"loaded":                     function() {}
+            "api_host":                     "api.cooladata.com"
+            ,"loaded":                      function() {}
             , "img":                        false
             , "http_post":                  false
             , "track_pageload":             false
             , "cookie_expiration":          365
             , "disable_cookie":             false
-            , "izzyClick":                  false
             , "cookie_name":                "cd_user_id"
-            , "izzyScriptUrl": 			    "ezsdk.cooladata.com/[APPKEY]/Izzycdext.js"
+            , "protocol":                   false 
         }
         , DOM_LOADED        = false;
 
@@ -525,13 +522,7 @@
             });
         }
     };
-    //Load izzy click
-    function loadIzzyScript(scriptSrc){
-            var fileObj = document.createElement('script');
-            fileObj.setAttribute("type","text/javascript");
-            fileObj.setAttribute("src", scriptSrc);
-            document.getElementsByTagName("head")[0].appendChild(fileObj);
-    }
+    
     // Console override
     var console = {
         /** @type {function(...[*])} */
@@ -626,10 +617,11 @@
     // method is this one initializes the actual instance, whereas the
     // init(...) method sets up a new library and calls _init on it.
     //
-    CooladataLib.prototype._init = function(userObject) {
+    CooladataLib.prototype._init = function(userObject, c, name) {
         this['__loaded'] = true;
         this['__SV'] = true;
         this['config'] = {};
+        this['eventsArray'] = [];
 
         this.set_config(_.extend({}, DEFAULT_CONFIG, {
             "token": userObject.app_key
@@ -638,18 +630,14 @@
             , "http_post": userObject.http_post
             , "track_pageload": userObject.track_pageload
             , "disable_cookie": userObject.disable_cookie
+            , "name": name
         }));
-
-        if(userObject.api_host) {
-            this.set_config({
-                "api_host": HTTP_PROTOCOL + userObject.api_host
-            });
-        }
-
-        if(userObject.izzyClick){
-            var scriptSrc = HTTP_PROTOCOL + DEFAULT_CONFIG.izzyScriptUrl.replace("[APPKEY]",userObject.app_key);
-            loadIzzyScript(scriptSrc);
-        }
+        
+        var protocol = userObject.protocol && ("http" == userObject.protocol || "https" == userObject.protocol) ? userObject.protocol + "://" : HTTP_PROTOCOL;
+        var api_host = userObject.api_host || DEFAULT_CONFIG.api_host;
+        this.set_config({
+            "api_host": protocol + api_host
+        });
 
         if(userObject.cookie_expiration) {
             this.set_config({
@@ -719,7 +707,8 @@
         var date = new Date();
         date.setTime(date.getTime()+(days*24*60*60*1000));
         var expires = "; expires=" + date.toGMTString();
-        var path = "path=/"
+        var path = "path=/";
+        var sameSiteSecure = "; SameSite=Lax; Secure"
 
         var TLD = ["com","org","net","int","edu","gov","mil","biz"];
 
@@ -756,7 +745,7 @@
             }
         }
 
-        document.cookie = cname + "=" + _.UUID() + expires + ';domain=.' + domain + ';' + path;
+        document.cookie = cname + "=" + _.UUID() + expires + ';domain=.' + domain + ';' + path + sameSiteSecure;
 
     };
 
@@ -827,19 +816,19 @@
 
         data = _.extend(data, properties);
 
-        eventsArray.push(data);
+        this.eventsArray.push(data);
     };
 
     CooladataLib.prototype.flush = function() {
         var url = this.get_config('api_host') + "/v1/" + this.get_config('token') + "/track";
 
         var data = {
-            events: eventsArray
+            events: this.eventsArray
         };
 
         var json_data = _.JSONEncode(data);
         this._send_request(json_data);
-        eventsArray = [];
+        this.eventsArray = [];
     };
 
     CooladataLib.prototype._onError = function(data, callback) {
@@ -965,7 +954,7 @@
                     item.call(this);
                 } else if (_.isArray(item) && fn_name === 'alias') {
                     alias_calls.push(item);
-                } else if (_.isArray(item) && fn_name.indexOf('track') != -1 && typeof(this[fn_name]) === "function") {
+                } else if (_.isArray(item) && (fn_name.indexOf('track') != -1 || fn_name.indexOf('flush') != -1) && typeof(this[fn_name]) === "function") {
                     tracking_calls.push(item);
                 } else {
                     other_calls.push(item);
@@ -1188,7 +1177,8 @@
             } else if (token) {
                 // intialize the main cooladata lib
                 instance = create_cooladatalib(token, config, PRIMARY_INSTANCE_NAME);
-                instance._loaded();
+                if(instance)
+                    instance._loaded();
             }
 
             window[PRIMARY_INSTANCE_NAME] = cooladata = instance;
