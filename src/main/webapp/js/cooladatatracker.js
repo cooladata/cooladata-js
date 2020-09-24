@@ -1210,11 +1210,6 @@
 
     // fallback handler, always will work
     _.register_event(window, 'load', dom_loaded_handler, true);
-    var urlChange = function(){
-        debugger;
-    }
-    window.addEventListener("popstate", urlChange);
-    window.addEventListener("hashchange", urlChange);
-
+    
 
 })(window['cooladata']);
