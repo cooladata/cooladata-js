@@ -65,9 +65,8 @@
             , "img": false
             , "http_post": false
             , "track_pageload": false
-            , "cookie_expiration": 365
-            , "disable_cookie": false
-            , "cookie_name": "cd_user_id"
+            , "stored_user_key_name": "medallia_journeys_id"
+            , "user_identifier_property": "user_id"
             , "protocol": false
         }
         , DOM_LOADED = false;
@@ -631,7 +630,8 @@
             , "session_id": userObject.session_id
             , "http_post": userObject.http_post
             , "track_pageload": userObject.track_pageload
-            , "disable_cookie": userObject.disable_cookie
+            , "user_identifier_property": userObject.user_identifier_property
+            , "stored_user_key_name": userObject.stored_user_key_name
             , "name": name
         }));
 
@@ -641,47 +641,12 @@
             "api_host": protocol + api_host
         });
 
-        if (userObject.cookie_expiration) {
-            this.set_config({
-                "cookie_expiration": userObject.cookie_expiration
-            });
-        }
+        var userId = userObject.user_id || this.getStoredUid() || _.UUID();
+        this.storeUid(userId);
 
-        if (userObject.user_id) {
-            this.set_config({
-                "user_id": userObject.user_id
-            });
-        }
-        else {
-            if (this.get_config('disable_cookie')) {
-                this.set_config({
-                    "user_id": _.UUID()
-                });
-            }
-            else {
-                var cookie_name = this.get_config('cookie_name');
-                var userId = this.getUid(cookie_name);
-                if (userId == "") {
-                    this.setUid(cookie_name);
-                    userId = this.getUid(cookie_name);
-                    if (userId == "") {
-                        this.set_config({
-                            "user_id": _.UUID()
-                        });
-                    }
-                    else {
-                        this.set_config({
-                            "user_id": userId
-                        });
-                    }
-                }
-                else {
-                    this.set_config({
-                        "user_id": userId
-                    });
-                }
-            }
-        }
+        this.set_config({
+            "user_id": userId
+        });
 
         this.__dom_loaded_queue = [];
         this.__request_queue = [];
@@ -691,28 +656,10 @@
         }
     };
 
-    // Private methods
-    CooladataLib.prototype.getExpirationDate = function () {
-        var days = this.get_config('cookie_expiration');
-        var date = new Date();
-        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        return date;
-    }
-
-    CooladataLib.prototype.getUid = function (cname) {
-        if (typeof (Storage) !== "undefined") {
-            var uid = window.localStorage.getItem(cname);
-            if (uid) {
-                var olddate = window.localStorage.getItem(cname + "_expiration");
-                var date = new Date(JSON.parse(olddate));
-
-                if ((new Date()) < date) {
-                    return uid;
-                }
-
-                window.localStorage.removeItem(cname, _.UUID());
-                window.localStorage.removeItem(cname + "_expiration");
-            }
+    CooladataLib.prototype.getStoredUid = function () {
+        var cname = this.get_config('stored_user_key_name');
+        if (typeof (Storage) !== "undefined" && window.localStorage.getItem(cname)) {
+            return window.localStorage.getItem(cname);
         }
         var name = cname + "=";
         var ca = document.cookie.split(';');
@@ -724,14 +671,15 @@
         return "";
     };
 
-    CooladataLib.prototype.setUid = function (cname) {
-        var date = this.getExpirationDate();
-
+    CooladataLib.prototype.storeUid = function (userId) {
+        var cname = this.get_config('stored_user_key_name');
         if (typeof (Storage) !== "undefined") {
-            window.localStorage.setItem(cname, _.UUID());
-            window.localStorage.setItem(cname + "_expiration", JSON.stringify(date));
+            window.localStorage.setItem(cname, userId);
             return;
         }
+
+        var date = new Date();
+        date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000));
 
         var expires = "; expires=" + date.toGMTString();
         var path = "path=/";
@@ -745,18 +693,15 @@
 
 
         if (parts[0] == "www" || parts.length == 4) {
-            // If the host starts with www or has 4 parts, then remove the first part (www or subdomain) and return the rest
             parts.shift();
             domain = parts.join(".");
         }
         else {
             switch (parts.length) {
                 case 2:
-                    // if the host has only 2 parts, return it
                     domain = parts.join(".");
                     break;
                 case 3:
-                    // if the host has 3 parts, check if the last part is a known 3-char TLD; if it is, the first part is a subdomain; otherwise, we have a 2 part TLD
                     var x = TLD.length;
                     while (x--) {
                         if (TLD[x] === parts[2]) {
@@ -765,22 +710,17 @@
                             break;
                         }
                     }
-                    // If we found nothing so far, there is no subdomain and this is a 2 part TLD; return as is
                     if (domain == "")
                         domain = parts.join(".");
                     break;
             }
         }
 
-        document.cookie = cname + "=" + _.UUID() + expires + ';domain=.' + domain + ';' + path + sameSiteSecure;
-
+        document.cookie = cname + "=" + userId + expires + ';domain=.' + domain + ';' + path + sameSiteSecure;
     };
 
     CooladataLib.prototype._loaded = function () {
         this.get_config('loaded')(this);
-
-        // this happens after so a user can call identify/name_tag in
-        // the loaded callback
         if (this.get_config('track_pageload')) {
             this.track_pageload();
         }
@@ -818,16 +758,9 @@
             return;
         }
 
-        // set defaults
         properties = properties || {};
 
-        // note: extend writes to the first object, so lets make sure we
-        // don't write to the cookie properties object and info
-        // properties object by passing in a new object
-
         var now = new Date();
-
-        // update properties with pageview info and super-properties
         var data = _.extend(
             {}
             , _.info.properties()
@@ -836,10 +769,11 @@
                 'event_name': event_name,
                 'event_timestamp_epoch': now.getTime().toString(),
                 'event_timezone_offset': -1.0 * (now.getTimezoneOffset() / 60),
-                'user_id': this.get_config('user_id'),
                 'session_id': this.get_config('session_id')
             }
         );
+
+        data[this.get_config('user_identifier_property')] = this.get_config('user_id');
 
         data = _.extend(data, properties);
 
@@ -1053,10 +987,12 @@
                 'event_name': event_name,
                 'event_timestamp_epoch': now.getTime().toString(),
                 'event_timezone_offset': -1.0 * (now.getTimezoneOffset() / 60),
-                'user_id': this.get_config('user_id'),
                 'session_id': this.get_config('session_id')
             }
         );
+
+        var userIdProperty = this.get_config('user_identifier_property');
+        data[userIdProperty] = this.get_config('user_id');
 
         data = _.extend(data, properties);
 
@@ -1236,6 +1172,7 @@
     }
 
     if (document.addEventListener) {
+        
         if (document.readyState == "complete") {
             // safari 4 can fire the DOMContentLoaded event before loading all
             // external JS (including this file). you will see some copypasta
@@ -1273,5 +1210,11 @@
 
     // fallback handler, always will work
     _.register_event(window, 'load', dom_loaded_handler, true);
+    var urlChange = function(){
+        debugger;
+    }
+    window.addEventListener("popstate", urlChange);
+    window.addEventListener("hashchange", urlChange);
+
 
 })(window['cooladata']);
