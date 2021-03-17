@@ -43,7 +43,7 @@
      */
     var HTTP_PROTOCOL = (("http:" == document.location.protocol) ? "http://" : "https://"),
 
-        LIB_VERSION = '2.2.20',
+        LIB_VERSION = '2.2.21',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
         // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
@@ -884,13 +884,13 @@
             req.send(params);
 
         } else {
+            data = {'data': _.base64Encode(data)};
+            url += '?' + _.HTTPBuildQuery(data);
             var script = document.createElement("script");
             script.type = "text/javascript";
             script.async = true;
             script.defer = true;
             script.src = url;
-            var s = document.getElementsByTagName("script")[0];
-            s.parentNode.insertBefore(script, s);
         }
     };
 
@@ -1172,7 +1172,7 @@
     }
 
     if (document.addEventListener) {
-        
+
         if (document.readyState == "complete") {
             // safari 4 can fire the DOMContentLoaded event before loading all
             // external JS (including this file). you will see some copypasta
@@ -1210,6 +1210,6 @@
 
     // fallback handler, always will work
     _.register_event(window, 'load', dom_loaded_handler, true);
-    
+
 
 })(window['cooladata']);
