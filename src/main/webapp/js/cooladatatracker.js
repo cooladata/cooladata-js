@@ -41,9 +41,7 @@
     /*
      * Dynamic... constants? Is that an oxymoron?
      */
-    var HTTP_PROTOCOL = (("http:" == document.location.protocol) ? "http://" : "https://"),
-
-        LIB_VERSION = '2.2.21',
+    var LIB_VERSION = '2.2.21',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
         // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
@@ -65,9 +63,9 @@
             , "img": false
             , "http_post": false
             , "track_pageload": false
-            , "stored_user_key_name": "medallia_journeys_id"
-            , "user_identifier_property": "user_id"
-            , "protocol": false
+            , "cookie_expiration": 365
+            , "disable_cookie": false
+            , "cookie_name": "cd_user_id" 
         }
         , DOM_LOADED = false;
 
@@ -630,23 +628,56 @@
             , "session_id": userObject.session_id
             , "http_post": userObject.http_post
             , "track_pageload": userObject.track_pageload
-            , "user_identifier_property": userObject.user_identifier_property
-            , "stored_user_key_name": userObject.stored_user_key_name
+            , "disable_cookie": userObject.disable_cookie
             , "name": name
         }));
 
-        var protocol = userObject.protocol && ("http" == userObject.protocol || "https" == userObject.protocol) ? userObject.protocol + "://" : HTTP_PROTOCOL;
         var api_host = userObject.api_host || DEFAULT_CONFIG.api_host;
         this.set_config({
-            "api_host": protocol + api_host
+            "api_host": "https://" + api_host
         });
 
-        var userId = userObject.user_id || this.getStoredUid() || _.UUID();
-        this.storeUid(userId);
+        if(userObject.cookie_expiration) {
+            this.set_config({
+                "cookie_expiration": userObject.cookie_expiration
+            });
+        }
 
-        this.set_config({
-            "user_id": userId
-        });
+        if(userObject.user_id) {
+            this.set_config({
+                "user_id": userObject.user_id
+            });
+        }
+        else {
+            if(this.get_config('disable_cookie')) {
+                this.set_config({
+                    "user_id": _.UUID()
+                });
+            }
+            else {
+                var cookie_name = this.get_config('cookie_name');
+                var userId = this.getCookie(cookie_name);
+                if(userId == "") {
+                    this.setCookie(cookie_name);
+                    userId = this.getCookie(cookie_name);
+                    if(userId == "") {
+                        this.set_config({
+                            "user_id": _.UUID()
+                        });
+                    }
+                    else {
+                        this.set_config({
+                            "user_id": userId
+                        });
+                    }
+                }
+                else {
+                    this.set_config({
+                        "user_id": userId
+                    });
+                }
+            }
+        }
 
         this.__dom_loaded_queue = [];
         this.__request_queue = [];
@@ -656,11 +687,9 @@
         }
     };
 
-    CooladataLib.prototype.getStoredUid = function () {
-        var cname = this.get_config('stored_user_key_name');
-        if (typeof (Storage) !== "undefined" && window.localStorage.getItem(cname)) {
-            return window.localStorage.getItem(cname);
-        }
+    // Private methods
+
+    CooladataLib.prototype.getCookie = function(cname) {
         var name = cname + "=";
         var ca = document.cookie.split(';');
         for (var i = 0; i < ca.length; i++) {
@@ -671,16 +700,10 @@
         return "";
     };
 
-    CooladataLib.prototype.storeUid = function (userId) {
-        var cname = this.get_config('stored_user_key_name');
-        if (typeof (Storage) !== "undefined") {
-            window.localStorage.setItem(cname, userId);
-            return;
-        }
-
+    CooladataLib.prototype.setCookie = function(cname) {
+        var days = this.get_config('cookie_expiration');
         var date = new Date();
-        date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000));
-
+        date.setTime(date.getTime()+(days*24*60*60*1000));
         var expires = "; expires=" + date.toGMTString();
         var path = "path=/";
         var sameSiteSecure = "; SameSite=Lax; Secure"
@@ -716,7 +739,7 @@
             }
         }
 
-        document.cookie = cname + "=" + userId + expires + ';domain=.' + domain + ';' + path + sameSiteSecure;
+        document.cookie = cname + "=" + _.UUID() + expires + ';domain=.' + domain + ';' + path + sameSiteSecure;
     };
 
     CooladataLib.prototype._loaded = function () {
@@ -769,11 +792,10 @@
                 'event_name': event_name,
                 'event_timestamp_epoch': now.getTime().toString(),
                 'event_timezone_offset': -1.0 * (now.getTimezoneOffset() / 60),
+                'user_id': this.get_config('user_id'),
                 'session_id': this.get_config('session_id')
             }
         );
-
-        data[this.get_config('user_identifier_property')] = this.get_config('user_id');
 
         data = _.extend(data, properties);
 
@@ -884,13 +906,13 @@
             req.send(params);
 
         } else {
-            data = {'data': _.base64Encode(data)};
-            url += '?' + _.HTTPBuildQuery(data);
             var script = document.createElement("script");
             script.type = "text/javascript";
             script.async = true;
             script.defer = true;
             script.src = url;
+            var s = document.getElementsByTagName("script")[0];
+            s.parentNode.insertBefore(script, s);
         }
     };
 
@@ -987,12 +1009,10 @@
                 'event_name': event_name,
                 'event_timestamp_epoch': now.getTime().toString(),
                 'event_timezone_offset': -1.0 * (now.getTimezoneOffset() / 60),
+                'user_id': this.get_config('user_id'),
                 'session_id': this.get_config('session_id')
             }
         );
-
-        var userIdProperty = this.get_config('user_identifier_property');
-        data[userIdProperty] = this.get_config('user_id');
 
         data = _.extend(data, properties);
 
