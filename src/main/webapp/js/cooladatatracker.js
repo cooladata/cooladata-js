@@ -41,9 +41,7 @@
     /*
      * Dynamic... constants? Is that an oxymoron?
      */
-    var HTTP_PROTOCOL = (("http:" == document.location.protocol) ? "http://" : "https://"),
-
-        LIB_VERSION = '2.2.21',
+    var LIB_VERSION = '2.2.23',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
         // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
@@ -67,7 +65,6 @@
             , "track_pageload": false
             , "stored_user_key_name": "medallia_journeys_id"
             , "user_identifier_property": "user_id"
-            , "protocol": false
         }
         , DOM_LOADED = false;
 
@@ -516,10 +513,6 @@
         pageviewInfo: function (page) {
             return _.strip_empty_properties({
                 'event_timestamp_epoch': 1 * (new Date()),
-                //   'page_url': document.location.href,//window.location.protocol + '//' + window.location.host + window.location.pathname,
-                //    'page_title': document.title//,
-                //    'page_url_params': window.location.search ? window.location.search.slice(1) : '',
-                //    'page_url_hash': window.location.hash ? window.location.hash : '',
             });
         }
     };
@@ -635,10 +628,9 @@
             , "name": name
         }));
 
-        var protocol = userObject.protocol && ("http" == userObject.protocol || "https" == userObject.protocol) ? userObject.protocol + "://" : HTTP_PROTOCOL;
         var api_host = userObject.api_host || DEFAULT_CONFIG.api_host;
         this.set_config({
-            "api_host": protocol + api_host
+            "api_host": "https://" + api_host
         });
 
         var userId = userObject.user_id || this.getStoredUid() || _.UUID();
