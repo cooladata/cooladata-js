@@ -33,8 +33,13 @@
         , windowConsole     = window.console
         , navigator         = window.navigator
         , document          = window.document
-        , userAgent         = navigator.userAgent;
+        , userAgent         = navigator.userAgent
+        , clientHintsPromise;
 
+    if (navigator.userAgentData && navigator.userAgentData.platform) {
+        clientHintsPromise = navigator.userAgentData.getHighEntropyValues(['architecture', 'bitness', 'model', 'platformVersion', 'uaFullVersion', 'fullVersionList', 'wow64'])
+            .then(JSON.stringify);
+    }
 
     /** @const */   var   PRIMARY_INSTANCE_NAME     = "cooladata";
 
@@ -43,7 +48,7 @@
      */
     var HTTP_PROTOCOL = (("http:" == document.location.protocol) ? "http://" : "https://"),
 
-        LIB_VERSION = '2.1.20',
+        LIB_VERSION = '2.1.21',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
     // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
@@ -114,8 +119,8 @@
         };
 
         _.isArray = nativeIsArray || function(obj) {
-                return toString.call(obj) === '[object Array]';
-            };
+            return toString.call(obj) === '[object Array]';
+        };
 
         // from a comment on http://dbj.org/dbj/?p=286
         // fails on only one very rare and deliberate custom object:
@@ -815,8 +820,17 @@
         );
 
         data = _.extend(data, properties);
-
-        this.eventsArray.push(data);
+        
+        if(clientHintsPromise){
+            var self = this;
+            clientHintsPromise.then(function (clientHintsValues) {
+                data = _.extend(data, {clientHints: clientHintsValues});
+            }).finally(function () {
+                self.eventsArray.push(data);
+            });
+        } else {
+            this.eventsArray.push(data);
+        }
     };
 
     CooladataLib.prototype.flush = function() {
@@ -1033,17 +1047,27 @@
 
         data = _.extend(data, properties);
 
-        data = {
-            events: [data]
+        if(clientHintsPromise){
+            clientHintsPromise.then(function (clientHintsValues) {
+                data = _.extend(data, {clientHints: clientHintsValues});
+            }).finally(function () {
+                sendData(data);
+            });
+        } else {
+            sendData(data);
         }
+        var self = this;
+        function sendData(data) {
+            data = {
+                events: [data]
+            }
+            var json_data = _.JSONEncode(data);
 
-        var json_data = _.JSONEncode(data);
-
-
-        this._send_request(
-            json_data,
-            callback
-        );
+            self._send_request(
+                json_data,
+                callback
+            );
+        }
     };
 
     /**
