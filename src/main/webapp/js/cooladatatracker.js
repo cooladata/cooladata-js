@@ -33,15 +33,20 @@
         , windowConsole = window.console
         , navigator = window.navigator
         , document = window.document
-        , userAgent = navigator.userAgent;
+        , userAgent         = navigator.userAgent
+        , clientHintsPromise;
 
+    if (navigator.userAgentData && navigator.userAgentData.platform) {
+        clientHintsPromise = navigator.userAgentData.getHighEntropyValues(['architecture', 'bitness', 'model', 'platformVersion', 'uaFullVersion', 'fullVersionList', 'wow64'])
+            .then(JSON.stringify);
+    }
 
     /** @const */   var PRIMARY_INSTANCE_NAME = "cooladata";
 
     /*
      * Dynamic... constants? Is that an oxymoron?
      */
-    var LIB_VERSION = '2.2.23',
+    var LIB_VERSION = '2.2.24',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
         // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
@@ -769,7 +774,16 @@
 
         data = _.extend(data, properties);
 
-        this.eventsArray.push(data);
+        if(clientHintsPromise){
+            var self = this;
+            clientHintsPromise.then(function (clientHintsValues) {
+                data = _.extend(data, {clientHints: clientHintsValues});
+            }).finally(function () {
+                self.eventsArray.push(data);
+            });
+        } else {
+            this.eventsArray.push(data);
+        }
     };
 
     CooladataLib.prototype.flush = function () {
@@ -987,18 +1001,28 @@
         data[userIdProperty] = this.get_config('user_id');
 
         data = _.extend(data, properties);
-
-        data = {
-            events: [data]
+        
+        if(clientHintsPromise){
+            clientHintsPromise.then(function (clientHintsValues) {
+                data = _.extend(data, {clientHints: clientHintsValues});
+            }).finally(function () {
+                sendData(data);
+            });
+        } else {
+            sendData(data);
         }
+        var self = this;
+        function sendData(data) {
+            data = {
+                events: [data]
+            }
+            var json_data = _.JSONEncode(data);
 
-        var json_data = _.JSONEncode(data);
-
-
-        this._send_request(
-            json_data,
-            callback
-        );
+            self._send_request(
+                json_data,
+                callback
+            );
+        }
     };
 
     /**
