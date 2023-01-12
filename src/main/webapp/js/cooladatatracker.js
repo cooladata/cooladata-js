@@ -824,7 +824,7 @@
         if(clientHintsPromise){
             var self = this;
             clientHintsPromise.then(function (clientHintsValues) {
-                data = _.extend(data, {clientHints: clientHintsValues});
+                data = _.extend(data, {client_hints: clientHintsValues});
             }).finally(function () {
                 self.eventsArray.push(data);
             });
@@ -1049,7 +1049,7 @@
 
         if(clientHintsPromise){
             clientHintsPromise.then(function (clientHintsValues) {
-                data = _.extend(data, {clientHints: clientHintsValues});
+                data = _.extend(data, {client_hints: clientHintsValues});
             }).finally(function () {
                 sendData(data);
             });
