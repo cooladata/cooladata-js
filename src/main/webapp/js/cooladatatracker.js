@@ -46,7 +46,7 @@
     /*
      * Dynamic... constants? Is that an oxymoron?
      */
-    var LIB_VERSION = '2.2.24',
+    var LIB_VERSION = '2.2.25',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
         // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
