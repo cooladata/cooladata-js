@@ -33,8 +33,13 @@
         , windowConsole     = window.console
         , navigator         = window.navigator
         , document          = window.document
-        , userAgent         = navigator.userAgent;
+        , userAgent         = navigator.userAgent
+        , clientHintsPromise;
 
+    if (navigator.userAgentData && navigator.userAgentData.platform) {
+        clientHintsPromise = navigator.userAgentData.getHighEntropyValues(['architecture', 'bitness', 'model', 'platformVersion', 'uaFullVersion', 'fullVersionList', 'wow64'])
+            .then(JSON.stringify);
+    }
 
     /** @const */   var   PRIMARY_INSTANCE_NAME     = "cooladata";
 
@@ -43,7 +48,7 @@
      */
     var HTTP_PROTOCOL = (("http:" == document.location.protocol) ? "http://" : "https://"),
 
-        LIB_VERSION = '2.1.20',
+        LIB_VERSION = '2.1.22',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
     // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
@@ -114,8 +119,8 @@
         };
 
         _.isArray = nativeIsArray || function(obj) {
-                return toString.call(obj) === '[object Array]';
-            };
+            return toString.call(obj) === '[object Array]';
+        };
 
         // from a comment on http://dbj.org/dbj/?p=286
         // fails on only one very rare and deliberate custom object:
@@ -815,13 +820,20 @@
         );
 
         data = _.extend(data, properties);
-
-        this.eventsArray.push(data);
+        
+        if(clientHintsPromise){
+            var self = this;
+            clientHintsPromise.then(function (clientHintsValues) {
+                data = _.extend(data, {client_hints: clientHintsValues});
+            }).finally(function () {
+                self.eventsArray.push(data);
+            });
+        } else {
+            this.eventsArray.push(data);
+        }
     };
 
     CooladataLib.prototype.flush = function() {
-        var url = this.get_config('api_host') + "/v1/" + this.get_config('token') + "/track";
-
         var data = {
             events: this.eventsArray
         };
@@ -1033,18 +1045,25 @@
 
         data = _.extend(data, properties);
 
-        data = {
-            events: [data]
+        if(clientHintsPromise){
+            clientHintsPromise.then(function (clientHintsValues) {
+                data = _.extend(data, {client_hints: clientHintsValues});
+            }).finally(this._send_events.bind(this, data, callback));
+        } else {
+            this._send_events(data, callback);
         }
+    };
 
-        var json_data = _.JSONEncode(data);
-
+    CooladataLib.prototype._send_events = function (event, callback) {
+        var json_data = _.JSONEncode({
+            events: [event]
+        });
 
         this._send_request(
             json_data,
             callback
         );
-    };
+    }
 
     /**
      * Track a page view event, which is currently ignored by the server.
