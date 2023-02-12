@@ -787,8 +787,6 @@
     };
 
     CooladataLib.prototype.flush = function () {
-        var url = this.get_config('api_host') + "/v1/" + this.get_config('token') + "/track";
-
         var data = {
             events: this.eventsArray
         };
@@ -1005,9 +1003,7 @@
         if(clientHintsPromise){
             clientHintsPromise.then(function (clientHintsValues) {
                 data = _.extend(data, {client_hints: clientHintsValues});
-            }).finally(function () {
-                this._send_events(data);
-            });
+            }).finally(this._send_events.bind(this, data));
         } else {
             this._send_events(data);
         }
