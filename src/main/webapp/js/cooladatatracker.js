@@ -1006,24 +1006,23 @@
             clientHintsPromise.then(function (clientHintsValues) {
                 data = _.extend(data, {client_hints: clientHintsValues});
             }).finally(function () {
-                sendData(data);
+                this._send_events(data);
             });
         } else {
-            sendData(data);
-        }
-        var self = this;
-        function sendData(data) {
-            data = {
-                events: [data]
-            }
-            var json_data = _.JSONEncode(data);
-
-            self._send_request(
-                json_data,
-                callback
-            );
+            this._send_events(data);
         }
     };
+
+    CooladataLib.prototype._send_events = function (events, callback) {
+        var json_data = _.JSONEncode({
+            events: [events]
+        });
+
+        this._send_request(
+            json_data,
+            callback
+        );
+    }
 
     /**
      * Track a page view event, which is currently ignored by the server.
