@@ -834,8 +834,6 @@
     };
 
     CooladataLib.prototype.flush = function() {
-        var url = this.get_config('api_host') + "/v1/" + this.get_config('token') + "/track";
-
         var data = {
             events: this.eventsArray
         };
@@ -1050,25 +1048,22 @@
         if(clientHintsPromise){
             clientHintsPromise.then(function (clientHintsValues) {
                 data = _.extend(data, {client_hints: clientHintsValues});
-            }).finally(function () {
-                sendData(data);
-            });
+            }).finally(this._send_events.bind(this, data, callback));
         } else {
-            sendData(data);
-        }
-        var self = this;
-        function sendData(data) {
-            data = {
-                events: [data]
-            }
-            var json_data = _.JSONEncode(data);
-
-            self._send_request(
-                json_data,
-                callback
-            );
+            this._send_events(data, callback);
         }
     };
+
+    CooladataLib.prototype._send_events = function (event, callback) {
+        var json_data = _.JSONEncode({
+            events: [event]
+        });
+
+        this._send_request(
+            json_data,
+            callback
+        );
+    }
 
     /**
      * Track a page view event, which is currently ignored by the server.
