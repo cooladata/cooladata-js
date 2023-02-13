@@ -1003,9 +1003,9 @@
         if(clientHintsPromise){
             clientHintsPromise.then(function (clientHintsValues) {
                 data = _.extend(data, {client_hints: clientHintsValues});
-            }).finally(this._send_events.bind(this, data));
+            }).finally(this._send_events.bind(this, data, callback));
         } else {
-            this._send_events(data);
+            this._send_events(data, callback);
         }
     };
 
