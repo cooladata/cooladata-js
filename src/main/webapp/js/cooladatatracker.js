@@ -46,9 +46,7 @@
     /*
      * Dynamic... constants? Is that an oxymoron?
      */
-    var HTTP_PROTOCOL = (("http:" == document.location.protocol) ? "http://" : "https://"),
-
-        LIB_VERSION = '2.1.22',
+    var LIB_VERSION = '2.1.22',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
     // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
@@ -73,7 +71,6 @@
             , "cookie_expiration":          365
             , "disable_cookie":             false
             , "cookie_name":                "cd_user_id"
-            , "protocol":                   false 
         }
         , DOM_LOADED        = false;
 
@@ -638,10 +635,9 @@
             , "name": name
         }));
         
-        var protocol = userObject.protocol && ("http" == userObject.protocol || "https" == userObject.protocol) ? userObject.protocol + "://" : HTTP_PROTOCOL;
         var api_host = userObject.api_host || DEFAULT_CONFIG.api_host;
         this.set_config({
-            "api_host": protocol + api_host
+            "api_host": 'https://' + api_host
         });
 
         if(userObject.cookie_expiration) {
