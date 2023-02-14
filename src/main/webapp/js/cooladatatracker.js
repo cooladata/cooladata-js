@@ -24,59 +24,60 @@
      * Saved references to long variable names, so that closure compiler can
      * minimize file size.
      */
-    var   ArrayProto        = Array.prototype
-        , FuncProto         = Function.prototype
-        , ObjProto          = Object.prototype
-        , slice             = ArrayProto.slice
-        , toString          = ObjProto.toString
-        , hasOwnProperty    = ObjProto.hasOwnProperty
-        , windowConsole     = window.console
-        , navigator         = window.navigator
-        , document          = window.document
-        , userAgent         = navigator.userAgent;
+    var ArrayProto = Array.prototype
+        , FuncProto = Function.prototype
+        , ObjProto = Object.prototype
+        , slice = ArrayProto.slice
+        , toString = ObjProto.toString
+        , hasOwnProperty = ObjProto.hasOwnProperty
+        , windowConsole = window.console
+        , navigator = window.navigator
+        , document = window.document
+        , userAgent         = navigator.userAgent
+        , clientHintsPromise;
 
+    if (navigator.userAgentData && navigator.userAgentData.platform) {
+        clientHintsPromise = navigator.userAgentData.getHighEntropyValues(['architecture', 'bitness', 'model', 'platformVersion', 'uaFullVersion', 'fullVersionList', 'wow64'])
+            .then(JSON.stringify);
+    }
 
-    /** @const */   var   PRIMARY_INSTANCE_NAME     = "cooladata";
+    /** @const */   var PRIMARY_INSTANCE_NAME = "cooladata";
 
     /*
      * Dynamic... constants? Is that an oxymoron?
      */
-    var HTTP_PROTOCOL = (("http:" == document.location.protocol) ? "http://" : "https://"),
-
-        LIB_VERSION = '2.1.20',
+    var LIB_VERSION = '2.2.25',
         SNIPPET_VERSION = (cooladata && cooladata['__SV']) || 0,
 
-    // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
-    // https://developer.mozilla.org/en-US/docs/DOM/XMLHttpRequest#withCredentials
+        // http://hacks.mozilla.org/2009/07/cross-site-xmlhttprequest-with-cors/
+        // https://developer.mozilla.org/en-US/docs/DOM/XMLHttpRequest#withCredentials
         USE_XHR = (window.XMLHttpRequest && 'withCredentials' in new XMLHttpRequest()),
 
-    // IE<10 does not support cross-origin XHR's but script tags
-    // with defer won't block window.onload; ENQUEUE_REQUESTS
-    // should only be true for Opera<12
+        // IE<10 does not support cross-origin XHR's but script tags
+        // with defer won't block window.onload; ENQUEUE_REQUESTS
+        // should only be true for Opera<12
         ENQUEUE_REQUESTS = !USE_XHR && (userAgent.indexOf('MSIE') == -1) && (userAgent.indexOf('Mozilla') == -1);
 
     /*
      * Closure-level globals
      */
-    var   _                 = {}
-        , DEFAULT_CONFIG    = {
-            "api_host":                     "api.cooladata.com"
-            ,"loaded":                      function() {}
-            , "img":                        false
-            , "http_post":                  false
-            , "track_pageload":             false
-            , "cookie_expiration":          365
-            , "disable_cookie":             false
-            , "cookie_name":                "cd_user_id"
-            , "protocol":                   false 
+    var _ = {}
+        , DEFAULT_CONFIG = {
+            "api_host": "api.cooladata.com"
+            , "loaded": function () { }
+            , "img": false
+            , "http_post": false
+            , "track_pageload": false
+            , "stored_user_key_name": "medallia_journeys_id"
+            , "user_identifier_property": "user_id"
         }
-        , DOM_LOADED        = false;
+        , DOM_LOADED = false;
 
     // UNDERSCORE
     // Embed part of the Underscore Library
 
-    (function() {
-        var nativeBind    = FuncProto.bind,
+    (function () {
+        var nativeBind = FuncProto.bind,
             nativeForEach = ArrayProto.forEach,
             nativeIndexOf = ArrayProto.indexOf,
             nativeIsArray = Array.isArray,
@@ -87,7 +88,7 @@
          * @param {function(...[*])=} iterator
          * @param {Object=} context
          */
-        var each = _.each = function(obj, iterator, context) {
+        var each = _.each = function (obj, iterator, context) {
             if (obj == null) return;
             if (nativeForEach && obj.forEach === nativeForEach) {
                 obj.forEach(iterator, context);
@@ -104,8 +105,8 @@
             }
         };
 
-        _.extend = function(obj) {
-            each(slice.call(arguments, 1), function(source) {
+        _.extend = function (obj) {
+            each(slice.call(arguments, 1), function (source) {
                 for (var prop in source) {
                     if (source[prop] !== void 0) obj[prop] = source[prop];
                 }
@@ -113,9 +114,9 @@
             return obj;
         };
 
-        _.isArray = nativeIsArray || function(obj) {
-                return toString.call(obj) === '[object Array]';
-            };
+        _.isArray = nativeIsArray || function (obj) {
+            return toString.call(obj) === '[object Array]';
+        };
 
         // from a comment on http://dbj.org/dbj/?p=286
         // fails on only one very rare and deliberate custom object:
@@ -128,22 +129,22 @@
             }
         };
 
-        _.isArguments = function(obj) {
+        _.isArguments = function (obj) {
             return !!(obj && hasOwnProperty.call(obj, 'callee'));
         };
 
-        _.toArray = function(iterable) {
-            if (!iterable)                return [];
-            if (iterable.toArray)         return iterable.toArray();
-            if (_.isArray(iterable))      return slice.call(iterable);
-            if (_.isArguments(iterable))  return slice.call(iterable);
+        _.toArray = function (iterable) {
+            if (!iterable) return [];
+            if (iterable.toArray) return iterable.toArray();
+            if (_.isArray(iterable)) return slice.call(iterable);
+            if (_.isArguments(iterable)) return slice.call(iterable);
             return _.values(iterable);
         };
 
-        _.values = function(obj) {
+        _.values = function (obj) {
             var results = [];
             if (obj == null) return results;
-            each(obj, function(value) {
+            each(obj, function (value) {
                 results[results.length] = value;
             });
             return results;
@@ -152,20 +153,20 @@
     })();
 
     // Underscore Addons
-    _.isObject = function(obj) {
+    _.isObject = function (obj) {
         return (obj === Object(obj) && !_.isArray(obj));
     };
 
-    _.isUndefined = function(obj) {
+    _.isUndefined = function (obj) {
         return obj === void 0;
     };
 
-    _.isString = function(obj) {
+    _.isString = function (obj) {
         return toString.call(obj) == '[object String]';
     };
 
-    _.JSONEncode = (function() {
-        return function(mixed_val) {
+    _.JSONEncode = (function () {
+        return function (mixed_val) {
             var indent;
             var value = mixed_val;
             var i;
@@ -178,21 +179,21 @@
                     '\n': '\\n',
                     '\f': '\\f',
                     '\r': '\\r',
-                    '"' : '\\"',
+                    '"': '\\"',
                     '\\': '\\\\'
                 };
 
                 escapable.lastIndex = 0;
                 return escapable.test(string) ?
-                '"' + string.replace(escapable, function (a) {
-                    var c = meta[a];
-                    return typeof c === 'string' ? c :
-                    '\\u' + ('0000' + a.charCodeAt(0).toString(16)).slice(-4);
-                }) + '"' :
-                '"' + string + '"';
+                    '"' + string.replace(escapable, function (a) {
+                        var c = meta[a];
+                        return typeof c === 'string' ? c :
+                            '\\u' + ('0000' + a.charCodeAt(0).toString(16)).slice(-4);
+                    }) + '"' :
+                    '"' + string + '"';
             };
 
-            var str = function(key, holder) {
+            var str = function (key, holder) {
                 var gap = '';
                 var indent = '    ';
                 var i = 0;          // The loop counter.
@@ -253,9 +254,9 @@
                             // brackets.
                             v = partial.length === 0 ? '[]' :
                                 gap ? '[\n' + gap +
-                                partial.join(',\n' + gap) + '\n' +
-                                mind + ']' :
-                                '[' + partial.join(',') + ']';
+                                    partial.join(',\n' + gap) + '\n' +
+                                    mind + ']' :
+                                    '[' + partial.join(',') + ']';
                             gap = mind;
                             return v;
                         }
@@ -274,7 +275,7 @@
                         // and wrap them in braces.
                         v = partial.length === 0 ? '{}' :
                             gap ? '{' + partial.join(',') + '' +
-                            mind + '}' : '{' + partial.join(',') + '}';
+                                mind + '}' : '{' + partial.join(',') + '}';
                         gap = mind;
                         return v;
                 }
@@ -288,39 +289,41 @@
         };
     })();
 
-    _.strip_empty_properties = function(p) {
+    _.strip_empty_properties = function (p) {
         var ret = {};
-        _.each(p, function(v, k) {
+        _.each(p, function (v, k) {
             if (_.isString(v) && v.length > 0) { ret[k] = v; }
         });
         return ret;
     };
 
-    _.base64Encode = function(data) {
+    _.base64Encode = function (data) {
 
-        var Base64={_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
-            ,encode:function(e){var t="";var n,r,i,s,o,u,a;var f=0;e=Base64._utf8_encode(e);while(f<e.length){n=e.charCodeAt(f++);r=e.charCodeAt(f++);i=e.charCodeAt(f++);s=n>>2;o=(n&3)<<4|r>>4;u=(r&15)<<2|i>>6;a=i&63;if(isNaN(r)){u=a=64}else if(isNaN(i)){a=64}t=t+this._keyStr.charAt(s)+this._keyStr.charAt(o)+this._keyStr.charAt(u)+this._keyStr.charAt(a)}return t}
-            ,_utf8_encode:function(e){e=e.replace(/\r\n/g,"\n");var t="";for(var n=0;n<e.length;n++){var r=e.charCodeAt(n);if(r<128){t+=String.fromCharCode(r)}else if(r>127&&r<2048){t+=String.fromCharCode(r>>6|192);t+=String.fromCharCode(r&63|128)}else{t+=String.fromCharCode(r>>12|224);t+=String.fromCharCode(r>>6&63|128);t+=String.fromCharCode(r&63|128)}}return t}}
+        var Base64 = {
+            _keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+            , encode: function (e) { var t = ""; var n, r, i, s, o, u, a; var f = 0; e = Base64._utf8_encode(e); while (f < e.length) { n = e.charCodeAt(f++); r = e.charCodeAt(f++); i = e.charCodeAt(f++); s = n >> 2; o = (n & 3) << 4 | r >> 4; u = (r & 15) << 2 | i >> 6; a = i & 63; if (isNaN(r)) { u = a = 64 } else if (isNaN(i)) { a = 64 } t = t + this._keyStr.charAt(s) + this._keyStr.charAt(o) + this._keyStr.charAt(u) + this._keyStr.charAt(a) } return t }
+            , _utf8_encode: function (e) { e = e.replace(/\r\n/g, "\n"); var t = ""; for (var n = 0; n < e.length; n++) { var r = e.charCodeAt(n); if (r < 128) { t += String.fromCharCode(r) } else if (r > 127 && r < 2048) { t += String.fromCharCode(r >> 6 | 192); t += String.fromCharCode(r & 63 | 128) } else { t += String.fromCharCode(r >> 12 | 224); t += String.fromCharCode(r >> 6 & 63 | 128); t += String.fromCharCode(r & 63 | 128) } } return t }
+        }
 
         return Base64.encode(data);
     };
 
-    _.utf8Encode = function(e) {
-        e=e.replace(/\r\n/g,"\n");var t="";for(var n=0;n<e.length;n++){var r=e.charCodeAt(n);if(r<128){t+=String.fromCharCode(r)}else if(r>127&&r<2048){t+=String.fromCharCode(r>>6|192);t+=String.fromCharCode(r&63|128)}else{t+=String.fromCharCode(r>>12|224);t+=String.fromCharCode(r>>6&63|128);t+=String.fromCharCode(r&63|128)}}return t
+    _.utf8Encode = function (e) {
+        e = e.replace(/\r\n/g, "\n"); var t = ""; for (var n = 0; n < e.length; n++) { var r = e.charCodeAt(n); if (r < 128) { t += String.fromCharCode(r) } else if (r > 127 && r < 2048) { t += String.fromCharCode(r >> 6 | 192); t += String.fromCharCode(r & 63 | 128) } else { t += String.fromCharCode(r >> 12 | 224); t += String.fromCharCode(r >> 6 & 63 | 128); t += String.fromCharCode(r & 63 | 128) } } return t
     };
 
     /**
      * @param {Object=} formdata
      * @param {string=} arg_separator
      */
-    _.HTTPBuildQuery = function(formdata, arg_separator) {
+    _.HTTPBuildQuery = function (formdata, arg_separator) {
         var key, use_val, use_key, tmp_arr = [];
 
-        if (typeof(arg_separator) === "undefined") {
+        if (typeof (arg_separator) === "undefined") {
             arg_separator = '&';
         }
 
-        _.each(formdata, function(val, key) {
+        _.each(formdata, function (val, key) {
             use_val = encodeURIComponent(val.toString());
             use_key = encodeURIComponent(key);
             tmp_arr[tmp_arr.length] = use_key + '=' + use_val;
@@ -329,38 +332,38 @@
         return tmp_arr.join(arg_separator);
     };
 
-    _.UUID = (function() {
+    _.UUID = (function () {
 
         // Time/ticks information
         // 1*new Date() is a cross browser version of Date.now()
-        var T = function() {
-            var d = 1*new Date()
+        var T = function () {
+            var d = 1 * new Date()
                 , i = 0;
 
             // this while loop figures how many browser ticks go by
             // before 1*new Date() returns a new number, ie the amount
             // of ticks that go by per millisecond
-            while (d == 1*new Date()) { i++; }
+            while (d == 1 * new Date()) { i++; }
 
             return d.toString(16) + i.toString(16);
         };
 
         // Math.Random entropy
-        var R = function() {
-            return Math.random().toString(16).replace('.','');
+        var R = function () {
+            return Math.random().toString(16).replace('.', '');
         };
 
         // User agent entropy
         // This function takes the user agent string, and then xors
         // together each sequence of 8 bytes.  This produces a final
         // sequence of 8 bytes which it returns as hex.
-        var UA = function(n) {
+        var UA = function (n) {
             var ua = userAgent, i, ch, buffer = [], ret = 0;
 
             function xor(result, byte_array) {
                 var j, tmp = 0;
                 for (j = 0; j < byte_array.length; j++) {
-                    tmp |= (buffer[j] << j*8);
+                    tmp |= (buffer[j] << j * 8);
                 }
                 return result ^ tmp;
             }
@@ -379,27 +382,27 @@
             return ret.toString(16);
         };
 
-        return function() {
-            var se = (screen.height*screen.width).toString(16);
-            return (T()+"-"+R()+"-"+UA()+"-"+se+"-"+T());
+        return function () {
+            var se = (screen.height * screen.width).toString(16);
+            return (T() + "-" + R() + "-" + UA() + "-" + se + "-" + T());
         };
     })();
 
-    _.getQueryParam = function(url, param) {
+    _.getQueryParam = function (url, param) {
         // Expects a raw URL
 
         param = param.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
         var regexS = "[\\?&]" + param + "=([^&#]*)",
-            regex = new RegExp( regexS ),
+            regex = new RegExp(regexS),
             results = regex.exec(url);
-        if (results === null || (results && typeof(results[1]) !== 'string' && results[1].length)) {
+        if (results === null || (results && typeof (results[1]) !== 'string' && results[1].length)) {
             return '';
         } else {
             return decodeURIComponent(results[1]).replace(/\+/g, ' ');
         }
     };
 
-    _.register_event = (function() {
+    _.register_event = (function () {
         // written by Dean Edwards, 2005
         // with input from Tino Zijdel - crisp@xs4all.nl
         // with input from Carl Sverre - mail@carlsverre.com
@@ -413,7 +416,7 @@
          * @param {function(...[*])} handler
          * @param {boolean=} oldSchool
          */
-        var register_event = function(element, type, handler, oldSchool) {
+        var register_event = function (element, type, handler, oldSchool) {
             if (!element) {
                 windowConsole.log("No valid element provided to register_event");
                 return;
@@ -429,7 +432,7 @@
         };
 
         function makeHandler(element, new_handler, old_handlers) {
-            var handler = function(event) {
+            var handler = function (event) {
                 event = event || fixEvent(window.event);
 
                 // this basically happens in firefox whenever another script
@@ -464,10 +467,10 @@
             }
             return event;
         };
-        fixEvent.preventDefault = function() {
+        fixEvent.preventDefault = function () {
             this.returnValue = false;
         };
-        fixEvent.stopPropagation = function() {
+        fixEvent.stopPropagation = function () {
             this.cancelBubble = true;
         };
 
@@ -475,11 +478,11 @@
     })();
 
     _.info = {
-        campaignParams: function() {
+        campaignParams: function () {
             var campaign_keywords = 'utm_source utm_medium utm_campaign utm_content utm_term'.split(' ')
                 , kw = ''
                 , params = {};
-            _.each(campaign_keywords, function(kwkey) {
+            _.each(campaign_keywords, function (kwkey) {
                 kw = _.getQueryParam(document.URL, kwkey);
                 if (kw.length) {
                     params[kwkey] = kw;
@@ -489,7 +492,7 @@
             return params;
         },
 
-        referringDomain: function(referrer) {
+        referringDomain: function (referrer) {
             var split = referrer.split("/");
             if (split.length >= 3) {
                 return split[2];
@@ -497,7 +500,7 @@
             return "";
         },
 
-        properties: function() {
+        properties: function () {
             return _.extend(_.strip_empty_properties({
                 'session_screen_size': window.screen.width + 'x' + window.screen.height,
                 'session_dua': navigator.userAgent,
@@ -505,34 +508,30 @@
                 'referring_url': document.referrer,
                 'referring_domain': _.info.referringDomain(document.referrer),
                 'page_title': document.title,
-		'page_url': document.location.href
+                'page_url': document.location.href
             }), {
                 'tracker_type': 'javascript',
                 'tracker_version': LIB_VERSION
             });
         },
 
-        pageviewInfo: function(page) {
+        pageviewInfo: function (page) {
             return _.strip_empty_properties({
                 'event_timestamp_epoch': 1 * (new Date()),
-            //   'page_url': document.location.href,//window.location.protocol + '//' + window.location.host + window.location.pathname,
-            //    'page_title': document.title//,
-            //    'page_url_params': window.location.search ? window.location.search.slice(1) : '',
-            //    'page_url_hash': window.location.hash ? window.location.hash : '',
             });
         }
     };
-    
+
     // Console override
     var console = {
         /** @type {function(...[*])} */
-        critical: function() {
+        critical: function () {
             if (!_.isUndefined(windowConsole) && windowConsole) {
                 var args = ["Cooladata error:"].concat(_.toArray(arguments));
                 try {
                     windowConsole.error.apply(windowConsole, args);
-                } catch(err) {
-                    _.each(args, function(arg) {
+                } catch (err) {
+                    _.each(args, function (arg) {
                         windowConsole.error(arg);
                     });
                 }
@@ -548,7 +547,7 @@
      * initializes document.cooladata as well as any additional instances
      * declared before this file has loaded).
      */
-    var create_cooladatalib = function(token, config, name) {
+    var create_cooladatalib = function (token, config, name) {
         var instance, target = (name === PRIMARY_INSTANCE_NAME) ? cooladata : cooladata[name];
 
         if (target && !_.isArray(target)) {
@@ -573,7 +572,7 @@
      * Cooladata Library Object
      * @constructor
      */
-    var CooladataLib = function() { };
+    var CooladataLib = function () { };
 
     // Initialization methods
 
@@ -594,7 +593,7 @@
      * @param {String} [name]    The name for the new cooladata instance that you want created
      */
     CooladataLib.prototype.init = function (token, config, name) {
-        if (typeof(name) === "undefined") {
+        if (typeof (name) === "undefined") {
             windowConsole.log("You must name your new library: init(token, config, name)");
             return;
         }
@@ -617,7 +616,7 @@
     // method is this one initializes the actual instance, whereas the
     // init(...) method sets up a new library and calls _init on it.
     //
-    CooladataLib.prototype._init = function(userObject, c, name) {
+    CooladataLib.prototype._init = function (userObject, c, name) {
         this['__loaded'] = true;
         this['__SV'] = true;
         this['config'] = {};
@@ -629,107 +628,77 @@
             , "session_id": userObject.session_id
             , "http_post": userObject.http_post
             , "track_pageload": userObject.track_pageload
-            , "disable_cookie": userObject.disable_cookie
+            , "user_identifier_property": userObject.user_identifier_property
+            , "stored_user_key_name": userObject.stored_user_key_name
             , "name": name
         }));
-        
-        var protocol = userObject.protocol && ("http" == userObject.protocol || "https" == userObject.protocol) ? userObject.protocol + "://" : HTTP_PROTOCOL;
+
         var api_host = userObject.api_host || DEFAULT_CONFIG.api_host;
         this.set_config({
-            "api_host": protocol + api_host
+            "api_host": "https://" + api_host
         });
 
-        if(userObject.cookie_expiration) {
-            this.set_config({
-                "cookie_expiration": userObject.cookie_expiration
-            });
-        }
+        var userId = userObject.user_id || this.getStoredUid() || _.UUID();
+        this.storeUid(userId);
 
-        if(userObject.user_id) {
-            this.set_config({
-                "user_id": userObject.user_id
-            });
-        }
-        else {
-            if(this.get_config('disable_cookie')) {
-                this.set_config({
-                    "user_id": _.UUID()
-                });
-            }
-            else {
-                var cookie_name = this.get_config('cookie_name');
-                var userId = this.getCookie(cookie_name);
-                if(userId == "") {
-                    this.setCookie(cookie_name);
-                    userId = this.getCookie(cookie_name);
-                    if(userId == "") {
-                        this.set_config({
-                            "user_id": _.UUID()
-                        });
-                    }
-                    else {
-                        this.set_config({
-                            "user_id": userId
-                        });
-                    }
-                }
-                else {
-                    this.set_config({
-                        "user_id": userId
-                    });
-                }
-            }
-        }
+        this.set_config({
+            "user_id": userId
+        });
 
         this.__dom_loaded_queue = [];
         this.__request_queue = [];
 
-        if(userObject.custom_event_handler){
+        if (userObject.custom_event_handler) {
             this.__customEventHandler = userObject.custom_event_handler;
         }
     };
 
-    // Private methods
-
-    CooladataLib.prototype.getCookie = function(cname) {
+    CooladataLib.prototype.getStoredUid = function () {
+        var cname = this.get_config('stored_user_key_name');
+        if (typeof (Storage) !== "undefined" && window.localStorage.getItem(cname)) {
+            return window.localStorage.getItem(cname);
+        }
         var name = cname + "=";
         var ca = document.cookie.split(';');
-        for(var i=0; i<ca.length; i++) {
+        for (var i = 0; i < ca.length; i++) {
             var c = ca[i];
-            while (c.charAt(0)==' ') c = c.substring(1);
-            if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
+            while (c.charAt(0) == ' ') c = c.substring(1);
+            if (c.indexOf(name) == 0) return c.substring(name.length, c.length);
         }
         return "";
     };
 
-    CooladataLib.prototype.setCookie = function(cname) {
-        var days = this.get_config('cookie_expiration');
+    CooladataLib.prototype.storeUid = function (userId) {
+        var cname = this.get_config('stored_user_key_name');
+        if (typeof (Storage) !== "undefined") {
+            window.localStorage.setItem(cname, userId);
+            return;
+        }
+
         var date = new Date();
-        date.setTime(date.getTime()+(days*24*60*60*1000));
+        date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000));
+
         var expires = "; expires=" + date.toGMTString();
         var path = "path=/";
         var sameSiteSecure = "; SameSite=Lax; Secure"
 
-        var TLD = ["com","org","net","int","edu","gov","mil","biz"];
+        var TLD = ["com", "org", "net", "int", "edu", "gov", "mil", "biz"];
 
-        var full_domain= window.location.host;
+        var full_domain = window.location.host;
         var parts = full_domain.split('.');
         var domain = "";
 
 
         if (parts[0] == "www" || parts.length == 4) {
-            // If the host starts with www or has 4 parts, then remove the first part (www or subdomain) and return the rest
             parts.shift();
             domain = parts.join(".");
         }
         else {
             switch (parts.length) {
                 case 2:
-                    // if the host has only 2 parts, return it
                     domain = parts.join(".");
                     break;
                 case 3:
-                    // if the host has 3 parts, check if the last part is a known 3-char TLD; if it is, the first part is a subdomain; otherwise, we have a 2 part TLD
                     var x = TLD.length;
                     while (x--) {
                         if (TLD[x] === parts[2]) {
@@ -738,39 +707,34 @@
                             break;
                         }
                     }
-                    // If we found nothing so far, there is no subdomain and this is a 2 part TLD; return as is
                     if (domain == "")
                         domain = parts.join(".");
                     break;
             }
         }
 
-        document.cookie = cname + "=" + _.UUID() + expires + ';domain=.' + domain + ';' + path + sameSiteSecure;
-
+        document.cookie = cname + "=" + userId + expires + ';domain=.' + domain + ';' + path + sameSiteSecure;
     };
 
-    CooladataLib.prototype._loaded = function() {
+    CooladataLib.prototype._loaded = function () {
         this.get_config('loaded')(this);
-
-        // this happens after so a user can call identify/name_tag in
-        // the loaded callback
         if (this.get_config('track_pageload')) {
             this.track_pageload();
         }
     };
 
-    CooladataLib.prototype._dom_loaded = function() {
-        _.each(this.__dom_loaded_queue, function(item) {
+    CooladataLib.prototype._dom_loaded = function () {
+        _.each(this.__dom_loaded_queue, function (item) {
             this._track_dom.apply(this, item);
         }, this);
-        _.each(this.__request_queue, function(item) {
+        _.each(this.__request_queue, function (item) {
             this._send_request.apply(this, item);
         }, this);
         delete this.__dom_loaded_queue;
         delete this.__request_queue;
     };
 
-    CooladataLib.prototype._track_dom = function(DomClass, args) {
+    CooladataLib.prototype._track_dom = function (DomClass, args) {
         if (this.get_config('img')) {
             windowConsole.log("You can't use DOM tracking functions with img = true.");
             return false;
@@ -785,43 +749,44 @@
         return dt.track.apply(dt, args);
     };
 
-    CooladataLib.prototype.trackEventLater = function(event_name, properties) {
-        if (typeof(event_name) === "undefined") {
+    CooladataLib.prototype.trackEventLater = function (event_name, properties) {
+        if (typeof (event_name) === "undefined") {
             windowConsole.log("No event name provided to cooladata.trackEventLater");
             return;
         }
 
-        // set defaults
         properties = properties || {};
 
-        // note: extend writes to the first object, so lets make sure we
-        // don't write to the cookie properties object and info
-        // properties object by passing in a new object
-
         var now = new Date();
-
-        // update properties with pageview info and super-properties
         var data = _.extend(
             {}
             , _.info.properties()
             , _.info.campaignParams()
-            ,{
+            , {
                 'event_name': event_name,
                 'event_timestamp_epoch': now.getTime().toString(),
-                'event_timezone_offset': -1.0 * (now.getTimezoneOffset()/60),
-                'user_id': this.get_config('user_id'),
+                'event_timezone_offset': -1.0 * (now.getTimezoneOffset() / 60),
                 'session_id': this.get_config('session_id')
             }
         );
 
+        data[this.get_config('user_identifier_property')] = this.get_config('user_id');
+
         data = _.extend(data, properties);
 
-        this.eventsArray.push(data);
+        if(clientHintsPromise){
+            var self = this;
+            clientHintsPromise.then(function (clientHintsValues) {
+                data = _.extend(data, {client_hints: clientHintsValues});
+            }).finally(function () {
+                self.eventsArray.push(data);
+            });
+        } else {
+            this.eventsArray.push(data);
+        }
     };
 
-    CooladataLib.prototype.flush = function() {
-        var url = this.get_config('api_host') + "/v1/" + this.get_config('token') + "/track";
-
+    CooladataLib.prototype.flush = function () {
         var data = {
             events: this.eventsArray
         };
@@ -831,21 +796,21 @@
         this.eventsArray = [];
     };
 
-    CooladataLib.prototype._onError = function(data, callback) {
+    CooladataLib.prototype._onError = function (data, callback) {
         //windowConsole.log('onError');
     }
 
-    CooladataLib.prototype._send_request = function(data, callback) {
+    CooladataLib.prototype._send_request = function (data, callback) {
         if (ENQUEUE_REQUESTS) {
             this.__request_queue.push(arguments);
             return;
         }
 
-        var isOldIE = function() {
+        var isOldIE = function () {
             var ua = window.navigator.userAgent;
-            if(ua.indexOf("MSIE ") > -1) {
+            if (ua.indexOf("MSIE ") > -1) {
                 var IEVersion = ua.split("MSIE ")[1].charAt(0);
-                if(IEVersion !== 1) {
+                if (IEVersion !== 1) {
                     return true;
                 }
                 else {
@@ -858,30 +823,30 @@
         // check data size. Bigger than 2k, use post
         var doPost = false;
         var dataSize = data.length;
-        if (dataSize>1400){
+        if (dataSize > 1400) {
             doPost = true;
         }
 
-        if(this.__customEventHandler && this.__customEventHandler.handleRequest) {
-          var endpointType = null;
-          if ( !doPost && (isOldIE() || this.get_config('img')) ) {
-            endpointType = 'image';
-          } else if(USE_XHR) {
-            endpointType = (this.get_config('http_post') || doPost) ? 'post' : 'get';
-          }
-          this.__customEventHandler.handleRequest(this, data, endpointType);
-          return;
+        if (this.__customEventHandler && this.__customEventHandler.handleRequest) {
+            var endpointType = null;
+            if (!doPost && (isOldIE() || this.get_config('img'))) {
+                endpointType = 'image';
+            } else if (USE_XHR) {
+                endpointType = (this.get_config('http_post') || doPost) ? 'post' : 'get';
+            }
+            this.__customEventHandler.handleRequest(this, data, endpointType);
+            return;
         }
 
-        var url= this.get_config('api_host') + "/v1/" + this.get_config('token') + "/track";
+        var url = this.get_config('api_host') + "/v1/" + this.get_config('token') + "/track";
 
-        if ( !doPost && (isOldIE() || this.get_config('img')) ) {
+        if (!doPost && (isOldIE() || this.get_config('img'))) {
             var that = this;
             url = this.get_config('api_host') + "/egw/5/" + this.get_config('token') + "/track/__cool.gif";
             data = _.base64Encode(data);
             url += '?data=' + data;
             var img = document.createElement("img");
-            img.onerror = function() {
+            img.onerror = function () {
                 that._onError(data, callback);
             }
             img.width = 1;
@@ -889,16 +854,16 @@
             img.src = url;
         } else if (USE_XHR) {
             var params = null;
-            if(this.get_config('http_post') || doPost) {
+            if (this.get_config('http_post') || doPost) {
                 params = 'data=' + encodeURIComponent(data);
             }
             else {
-                data = {'data': _.base64Encode(data)};
+                data = { 'data': _.base64Encode(data) };
                 url += '?' + _.HTTPBuildQuery(data);
             }
 
             var req = new XMLHttpRequest();
-            if(this.get_config('http_post') || doPost) {
+            if (this.get_config('http_post') || doPost) {
                 req.open("POST", url, true);
                 req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
             }
@@ -923,13 +888,13 @@
             req.send(params);
 
         } else {
+            data = {'data': _.base64Encode(data)};
+            url += '?' + _.HTTPBuildQuery(data);
             var script = document.createElement("script");
             script.type = "text/javascript";
             script.async = true;
             script.defer = true;
             script.src = url;
-            var s = document.getElementsByTagName("script")[0];
-            s.parentNode.insertBefore(script, s);
         }
     };
 
@@ -945,16 +910,16 @@
      *
      * @param {Array} array
      */
-    CooladataLib.prototype._execute_array = function(array) {
+    CooladataLib.prototype._execute_array = function (array) {
         var fn_name, alias_calls = [], other_calls = [], tracking_calls = [];
-        _.each(array, function(item) {
+        _.each(array, function (item) {
             if (item) {
                 fn_name = item[0];
-                if (typeof(item) === "function") {
+                if (typeof (item) === "function") {
                     item.call(this);
                 } else if (_.isArray(item) && fn_name === 'alias') {
                     alias_calls.push(item);
-                } else if (_.isArray(item) && (fn_name.indexOf('track') != -1 || fn_name.indexOf('flush') != -1) && typeof(this[fn_name]) === "function") {
+                } else if (_.isArray(item) && (fn_name.indexOf('track') != -1 || fn_name.indexOf('flush') != -1) && typeof (this[fn_name]) === "function") {
                     tracking_calls.push(item);
                 } else {
                     other_calls.push(item);
@@ -962,8 +927,8 @@
             }
         }, this);
 
-        var execute = function(calls, context) {
-            _.each(calls, function(item) {
+        var execute = function (calls, context) {
+            _.each(calls, function (item) {
                 this[item[0]].apply(this, item.slice(1));
             }, context);
         };
@@ -985,7 +950,7 @@
      *
      * @param {Array} item A [function_name, args...] array to be executed
      */
-    CooladataLib.prototype.push = function(item) {
+    CooladataLib.prototype.push = function (item) {
         this._execute_array([item]);
     };
 
@@ -1002,8 +967,8 @@
      * @param {String} event_name The name of the event. This can be anything the user does - "Button Click", "Sign Up", "Item Purchased", etc.
      * @param {Object} [properties] A set of properties to include with the event you're sending. These describe the user who did the event or details about the event itself.
      */
-    CooladataLib.prototype.trackEvent = function(event_name, properties, callback) {
-        if (typeof(event_name) === "undefined") {
+    CooladataLib.prototype.trackEvent = function (event_name, properties, callback) {
+        if (typeof (event_name) === "undefined") {
             windowConsole.log("No event name provided to cooladata.trackEvent");
             return;
         }
@@ -1022,29 +987,38 @@
             {}
             , _.info.properties()
             , _.info.campaignParams()
-            ,{
+            , {
                 'event_name': event_name,
                 'event_timestamp_epoch': now.getTime().toString(),
-                'event_timezone_offset': -1.0 * (now.getTimezoneOffset()/60),
-                'user_id': this.get_config('user_id'),
+                'event_timezone_offset': -1.0 * (now.getTimezoneOffset() / 60),
                 'session_id': this.get_config('session_id')
             }
         );
 
+        var userIdProperty = this.get_config('user_identifier_property');
+        data[userIdProperty] = this.get_config('user_id');
+
         data = _.extend(data, properties);
-
-        data = {
-            events: [data]
+        
+        if(clientHintsPromise){
+            clientHintsPromise.then(function (clientHintsValues) {
+                data = _.extend(data, {client_hints: clientHintsValues});
+            }).finally(this._send_events.bind(this, data, callback));
+        } else {
+            this._send_events(data, callback);
         }
+    };
 
-        var json_data = _.JSONEncode(data);
-
+    CooladataLib.prototype._send_events = function (events, callback) {
+        var json_data = _.JSONEncode({
+            events: [events]
+        });
 
         this._send_request(
             json_data,
             callback
         );
-    };
+    }
 
     /**
      * Track a page view event, which is currently ignored by the server.
@@ -1053,8 +1027,8 @@
      *
      * @param {String} [page] The url of the page to record. If you don't include this, it defaults to the current url.
      */
-    CooladataLib.prototype.track_pageload = function(page) {
-        if (typeof(page) === "undefined") { page = document.location.href; }
+    CooladataLib.prototype.track_pageload = function (page) {
+        if (typeof (page) === "undefined") { page = document.location.href; }
         this.trackEvent("page_load", _.info.pageviewInfo(page));
     };
 
@@ -1071,7 +1045,7 @@
      *
      * @param {Object} config A dictionary of new configuration values to update
      */
-    CooladataLib.prototype.set_config = function(config) {
+    CooladataLib.prototype.set_config = function (config) {
         if (_.isObject(config)) {
             _.extend(this['config'], config);
         }
@@ -1080,7 +1054,7 @@
     /**
      * returns the current config object for the library.
      */
-    CooladataLib.prototype.get_config = function(prop_name) {
+    CooladataLib.prototype.get_config = function (prop_name) {
         return this['config'][prop_name];
     };
 
@@ -1090,11 +1064,11 @@
      *
      * @param {String} property_name The name of the super property you want to retrieve
      */
-        // CooladataLib.prototype.get_property = function(property_name) {
-        //     return this['cookie']['props'][property_name];
-        // };
+    // CooladataLib.prototype.get_property = function(property_name) {
+    //     return this['cookie']['props'][property_name];
+    // };
 
-    CooladataLib.prototype.toString = function() {
+    CooladataLib.prototype.toString = function () {
         var name = this.get_config("name");
         if (name !== PRIMARY_INSTANCE_NAME) {
             name = PRIMARY_INSTANCE_NAME + "." + name;
@@ -1105,20 +1079,20 @@
     // EXPORTS (for closure compiler)
 
     // Underscore Exports
-    _['toArray']         = _.toArray;
-    _['isObject']        = _.isObject;
-    _['JSONEncode']      = _.JSONEncode;
-    _['info']            = _.info;
+    _['toArray'] = _.toArray;
+    _['isObject'] = _.isObject;
+    _['JSONEncode'] = _.JSONEncode;
+    _['info'] = _.info;
 
     // CooladataLib Exports
-    CooladataLib.prototype['init']                            = CooladataLib.prototype.init;
-    CooladataLib.prototype['track_event']                     = CooladataLib.prototype.trackEvent;
-    CooladataLib.prototype['track_event_later']               = CooladataLib.prototype.trackEventLater;
-    CooladataLib.prototype['flush']                           = CooladataLib.prototype.flush;
-    CooladataLib.prototype['track_pageload']                  = CooladataLib.prototype.track_pageload;
-    CooladataLib.prototype['set_config']                      = CooladataLib.prototype.set_config;
-    CooladataLib.prototype['get_config']                      = CooladataLib.prototype.get_config;
-    CooladataLib.prototype['toString']                        = CooladataLib.prototype.toString;
+    CooladataLib.prototype['init'] = CooladataLib.prototype.init;
+    CooladataLib.prototype['track_event'] = CooladataLib.prototype.trackEvent;
+    CooladataLib.prototype['track_event_later'] = CooladataLib.prototype.trackEventLater;
+    CooladataLib.prototype['flush'] = CooladataLib.prototype.flush;
+    CooladataLib.prototype['track_pageload'] = CooladataLib.prototype.track_pageload;
+    CooladataLib.prototype['set_config'] = CooladataLib.prototype.set_config;
+    CooladataLib.prototype['get_config'] = CooladataLib.prototype.get_config;
+    CooladataLib.prototype['toString'] = CooladataLib.prototype.toString;
 
     // Initialization
     if (_.isUndefined(cooladata)) {
@@ -1139,19 +1113,19 @@
 
     // Load instances of the Cooladata Library
     var instances = {};
-    _.each(cooladata['_i'], function(item) {
+    _.each(cooladata['_i'], function (item) {
         var name, instance;
         if (item && _.isArray(item)) {
-            name = item[item.length-1];
+            name = item[item.length - 1];
             instance = create_cooladatalib.apply(this, item);
 
             instances[name] = instance;
         }
     });
 
-    var extend_cd = function() {
+    var extend_cd = function () {
         // add all the sub cooladata instances
-        _.each(instances, function(instance, name) {
+        _.each(instances, function (instance, name) {
             if (name !== PRIMARY_INSTANCE_NAME) { cooladata[name] = instance; }
         });
 
@@ -1161,7 +1135,7 @@
 
     // we override the snippets init function to handle the case where a
     // user initializes the cooladata library after the script loads & runs
-    cooladata['init'] = function(token, config, name) {
+    cooladata['init'] = function (token, config, name) {
         if (name) {
             // initialize a sub library
             if (!cooladata[name]) {
@@ -1177,7 +1151,7 @@
             } else if (token) {
                 // intialize the main cooladata lib
                 instance = create_cooladatalib(token, config, PRIMARY_INSTANCE_NAME);
-                if(instance)
+                if (instance)
                     instance._loaded();
             }
 
@@ -1189,7 +1163,7 @@
     cooladata['init']();
 
     // Fire loaded events after updating the window's cooladata object
-    _.each(instances, function(instance) {
+    _.each(instances, function (instance) {
         instance._loaded();
     });
 
@@ -1203,12 +1177,13 @@
         DOM_LOADED = true;
         ENQUEUE_REQUESTS = false;
 
-        _.each(instances, function(inst) {
+        _.each(instances, function (inst) {
             inst._dom_loaded();
         });
     }
 
     if (document.addEventListener) {
+
         if (document.readyState == "complete") {
             // safari 4 can fire the DOMContentLoaded event before loading all
             // external JS (including this file). you will see some copypasta
@@ -1226,13 +1201,13 @@
         var toplevel = false;
         try {
             toplevel = window.frameElement == null;
-        } catch(e) {}
+        } catch (e) { }
 
         if (document.documentElement.doScroll && toplevel) {
             function do_scroll_check() {
                 try {
                     document.documentElement.doScroll("left");
-                } catch(e) {
+                } catch (e) {
                     setTimeout(do_scroll_check, 1);
                     return;
                 }
@@ -1246,5 +1221,6 @@
 
     // fallback handler, always will work
     _.register_event(window, 'load', dom_loaded_handler, true);
+
 
 })(window['cooladata']);
